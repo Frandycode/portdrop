@@ -1,0 +1,64 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Author   : Frandy Slueue
+# Alias    : CodeBreeder
+# Title    : Software Engineering · DevOps Security · IT Ops
+# Portfolio: https://frandycode.dev
+# GitHub   : https://github.com/frandycode
+# Email    : frandyslueue@gmail.com
+# Location : Tulsa, OK & Dallas, TX (Central Time)
+# Project  : PortDrop — root gitignore for the monorepo
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+out/
+.next/
+*.vsix
+*.tsbuildinfo
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Secrets / certs — never committed
+*.key
+*.pem
+*.secret
+credentials.*
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VS Code (project-specific kept, user-specific ignored)
+.vscode/settings.json
+.vscode/launch.json
+!.vscode/extensions.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Docker
+*.override.yml
+
+# Turbo
+.turbo/
+
+# Testing
+coverage/
+.nyc_output/

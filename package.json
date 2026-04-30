@@ -1,0 +1,24 @@
+{
+  "name": "portdrop",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Share your running app via a QR code. You control the window. You control the clock.",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "bash scripts/dev.sh",
+    "build:extension": "pnpm --filter extension build",
+    "build:dashboard": "pnpm --filter dashboard build",
+    "build": "pnpm run build:extension && pnpm run build:dashboard",
+    "lint": "pnpm -r lint",
+    "type-check": "pnpm -r type-check",
+    "clean": "pnpm -r exec rm -rf dist node_modules .next .turbo"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  },
+  "author": "Frandy Slueue",
+  "license": "MIT"
+}
