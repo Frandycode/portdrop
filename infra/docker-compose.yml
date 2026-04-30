@@ -1,0 +1,33 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Author   : Frandy Slueue
+# Alias    : CodeBreeder
+# Title    : Software Engineering · DevOps Security · IT Ops
+# Portfolio: https://frandycode.dev
+# GitHub   : https://github.com/frandycode
+# Email    : frandyslueue@gmail.com
+# Location : Tulsa, OK & Dallas, TX (Central Time)
+# Project  : PortDrop — Docker Compose for local dev (Nginx reverse proxy)
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: portdrop-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    restart: unless-stopped
+    extra_hosts:
+      # Lets Nginx resolve the host machine's localhost from inside the container
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  default:
+    name: portdrop-network
