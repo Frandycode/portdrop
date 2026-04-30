@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────────────────────
  * Author   : Frandy Slueue
- * Alias    : CodeBreeder
+ * Alias    : @CodeBreeder
  * Title    : Software Engineering · DevOps Security · IT Ops
  * Portfolio: https://frandycode.dev
  * GitHub   : https://github.com/frandycode
@@ -15,6 +15,7 @@ import * as vscode from 'vscode';
 import { StatusBarManager } from './statusBar';
 import { SessionManager } from './sessionManager';
 import { PortDetector } from './portDetector';
+import { resolveCloudflared } from './tunnel/installer';
 
 let statusBar: StatusBarManager;
 let session: SessionManager;
@@ -26,6 +27,13 @@ export function activate(context: vscode.ExtensionContext): void {
   session   = new SessionManager(context, statusBar);
 
   const detector = new PortDetector();
+
+  // ── Preflight: resolve cloudflared in background on startup ──────────────
+  // Resolved eagerly so the first "Start Session" feels instant.
+  // Errors surface only when the user actually tries to start a session.
+  resolveCloudflared(context).catch((err) => {
+    console.warn('[PortDrop] cloudflared preflight skipped:', err.message);
+  });
 
   // ── Commands ──────────────────────────────────────────────────────────────
 
