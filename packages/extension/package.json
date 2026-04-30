@@ -1,0 +1,131 @@
+{
+  "name": "portdrop",
+  "displayName": "PortDrop",
+  "description": "Share your running local app via a QR code. You control the window. You control the clock.",
+  "version": "0.1.0",
+  "publisher": "frandycode",
+  "author": {
+    "name": "Frandy Slueue",
+    "email": "frandyslueue@gmail.com",
+    "url": "https://frandycode.dev"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/frandycode/portdrop"
+  },
+  "engines": {
+    "vscode": "^1.89.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "tunnel",
+    "qr code",
+    "share",
+    "localhost",
+    "preview",
+    "ngrok",
+    "cloudflare"
+  ],
+  "icon": "assets/icon.png",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "portdrop.start",
+        "title": "PortDrop: Start Session",
+        "icon": "$(broadcast)"
+      },
+      {
+        "command": "portdrop.stop",
+        "title": "PortDrop: Stop Session",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "portdrop.openDashboard",
+        "title": "PortDrop: Open Dashboard",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "portdrop.copyUrl",
+        "title": "PortDrop: Copy Session URL",
+        "icon": "$(copy)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "portdrop-sidebar",
+          "title": "PortDrop",
+          "icon": "assets/sidebar-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "portdrop-sidebar": [
+        {
+          "id": "portdrop.sessionView",
+          "name": "Session",
+          "type": "webview"
+        }
+      ]
+    },
+    "menus": {
+      "commandPalette": [
+        { "command": "portdrop.start" },
+        { "command": "portdrop.stop" },
+        { "command": "portdrop.openDashboard" },
+        { "command": "portdrop.copyUrl" }
+      ]
+    },
+    "configuration": {
+      "title": "PortDrop",
+      "properties": {
+        "portdrop.defaultTTL": {
+          "type": "string",
+          "default": "1h",
+          "enum": ["15m", "1h", "4h"],
+          "description": "Default session time-to-live."
+        },
+        "portdrop.autoDetectPort": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically detect running dev server ports on startup."
+        },
+        "portdrop.showBadge": {
+          "type": "boolean",
+          "default": true,
+          "description": "Inject the PortDrop badge into the viewer's app preview."
+        },
+        "portdrop.blocklist": {
+          "type": "array",
+          "default": [],
+          "description": "Additional file paths or patterns to exclude from Code View.",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -watch -p tsconfig.json",
+    "package": "bash ../../scripts/package-extension.sh",
+    "lint": "eslint src --ext ts",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "@types/vscode": "^1.89.0",
+    "@types/qrcode": "^1.5.5",
+    "typescript": "^5.4.5",
+    "@vscode/vsce": "^2.26.0"
+  }
+}
