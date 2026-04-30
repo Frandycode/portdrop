@@ -1,0 +1,28 @@
+/*
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Author   : Frandy Slueue
+ * Alias    : CodeBreeder
+ * Title    : Software Engineering · DevOps Security · IT Ops
+ * Portfolio: https://frandycode.dev
+ * GitHub   : https://github.com/frandycode
+ * Email    : frandyslueue@gmail.com
+ * Location : Tulsa, OK & Dallas, TX (Central Time)
+ * Project  : PortDrop — global styles and brand design tokens
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* PortDrop brand tokens */
+    --pd-bg:      #020617; /* deep navy-black */
+    --pd-surface: #0f172a; /* card / panel surface */
+    --pd-border:  #1e293b; /* subtle border */
+    --pd-cyan:    #22d3ee; /* primary live signal accent */
+    --pd-orange:  #c2410c; /* expiry / warning accent */
+    --pd-muted:   #64748b; /* secondary text */
+  }
+}
