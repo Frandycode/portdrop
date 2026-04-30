@@ -16,6 +16,7 @@ import { StatusBarManager } from './statusBar';
 import { SessionManager } from './sessionManager';
 import { PortDetector } from './portDetector';
 import { resolveCloudflared } from './tunnel/installer';
+import { sessionStore } from './store/sessionStore';
 
 let statusBar: StatusBarManager;
 let session: SessionManager;
@@ -62,5 +63,6 @@ export function activate(context: vscode.ExtensionContext): void {
 
 export function deactivate(): void {
   session?.stop();
+  sessionStore.clear();
   console.log('[PortDrop] Extension deactivated.');
 }

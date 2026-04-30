@@ -17,14 +17,8 @@ import { StatusBarManager } from './statusBar';
 import { resolveCloudflared } from './tunnel/installer';
 import { startTunnel, stopTunnel } from './tunnel/cloudflare';
 import { generateQRDataUri } from './qrGenerator';
-
-export type TTLOption = '15m' | '1h' | '4h';
-
-const TTL_MS: Record<TTLOption, number> = {
-  '15m': 15 * 60 * 1000,
-  '1h':  60 * 60 * 1000,
-  '4h':  4 * 60 * 60 * 1000,
-};
+import { sessionStore } from './store/sessionStore';
+import { TTLOption } from './store/types';
 
 export interface SessionConfig {
   port: number;
@@ -52,8 +46,9 @@ export class SessionManager {
     config: null,
   };
 
-  private tunnelProcess: ChildProcess | null = null;
-  private ttlTimer: NodeJS.Timeout | null    = null;
+  private tunnelProcess: ChildProcess | null  = null;
+  private ttlTimer: NodeJS.Timeout | null     = null;
+  private currentSessionId: string | null     = null;
 
   constructor(
     private readonly context: vscode.ExtensionContext,
@@ -110,21 +105,38 @@ export class SessionManager {
           this.stop();
         });
 
-        const startedAt  = new Date();
-        const expiresAt  = new Date(startedAt.getTime() + TTL_MS[ttl]);
-        const qrDataUri  = await generateQRDataUri(result.publicUrl);
+        const qrDataUri = await generateQRDataUri(result.publicUrl);
+
+        // Register with the session store — store owns TTL scheduling
+        const record = sessionStore.create({
+          publicUrl:       result.publicUrl,
+          qrDataUri,
+          port,
+          ttl,
+          oneTimeScan:     false,
+          codeViewEnabled: false,
+        });
+
+        // React to store-driven expiry (TTL reached or one-time-scan burned)
+        sessionStore.once('expired', (id: string) => {
+          if (id === record.sessionId) {
+            vscode.window.showInformationMessage('[PortDrop] Session TTL reached. Tunnel closed.');
+            this.stop();
+          }
+        });
+
+        this.currentSessionId = record.sessionId;
 
         this.state = {
-          active: true,
-          publicUrl:  result.publicUrl,
+          active:    true,
+          publicUrl: result.publicUrl,
           qrDataUri,
-          startedAt,
-          expiresAt,
-          config: { port, ttl, oneTimeScan: false, codeViewEnabled: false },
+          startedAt: record.startedAt,
+          expiresAt: record.expiresAt,
+          config:    { port, ttl, oneTimeScan: false, codeViewEnabled: false },
         };
 
-        this.statusBar.setActive(expiresAt, result.publicUrl);
-        this.scheduleTTL(expiresAt);
+        this.statusBar.setActive(record.expiresAt, result.publicUrl);
 
         vscode.window.showInformationMessage(
           `[PortDrop] Session live → ${result.publicUrl}`,
@@ -151,6 +163,11 @@ export class SessionManager {
     if (this.ttlTimer) {
       clearTimeout(this.ttlTimer);
       this.ttlTimer = null;
+    }
+
+    if (this.currentSessionId) {
+      sessionStore.stop(this.currentSessionId);
+      this.currentSessionId = null;
     }
 
     this.state = {
@@ -187,15 +204,5 @@ export class SessionManager {
 
   getState(): Readonly<SessionState> {
     return this.state;
-  }
-
-  // ── TTL auto-kill ─────────────────────────────────────────────────────────
-
-  private scheduleTTL(expiresAt: Date): void {
-    const delay = expiresAt.getTime() - Date.now();
-    this.ttlTimer = setTimeout(() => {
-      vscode.window.showInformationMessage('[PortDrop] Session TTL reached. Tunnel closed.');
-      this.stop();
-    }, delay);
   }
 }
