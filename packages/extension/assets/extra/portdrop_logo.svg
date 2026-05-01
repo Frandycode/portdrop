@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+
+  <defs>
+    <clipPath id="cc">
+      <circle cx="64" cy="64" r="60"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="62" fill="#080C10" stroke="#38BDF8" stroke-width="2"/>
+
+  <!-- Dots clipped inside circle — blue-grey, fading bottom to top -->
+  <g clip-path="url(#cc)">
+    <!-- Row 1 — bottom, most visible -->
+    <circle cx="22"  cy="108" r="2.4" fill="#7EB8C9" opacity="0.55"/>
+    <circle cx="36"  cy="114" r="2.4" fill="#7EB8C9" opacity="0.55"/>
+    <circle cx="52"  cy="117" r="2.4" fill="#7EB8C9" opacity="0.55"/>
+    <circle cx="64"  cy="118" r="2.4" fill="#7EB8C9" opacity="0.55"/>
+    <circle cx="76"  cy="117" r="2.4" fill="#7EB8C9" opacity="0.55"/>
+    <circle cx="92"  cy="114" r="2.4" fill="#7EB8C9" opacity="0.55"/>
+    <circle cx="106" cy="108" r="2.4" fill="#7EB8C9" opacity="0.55"/>
+
+    <!-- Row 2 -->
+    <circle cx="14"  cy="92"  r="2.1" fill="#7EB8C9" opacity="0.38"/>
+    <circle cx="30"  cy="99"  r="2.1" fill="#7EB8C9" opacity="0.38"/>
+    <circle cx="48"  cy="103" r="2.1" fill="#7EB8C9" opacity="0.38"/>
+    <circle cx="64"  cy="105" r="2.1" fill="#7EB8C9" opacity="0.38"/>
+    <circle cx="80"  cy="103" r="2.1" fill="#7EB8C9" opacity="0.38"/>
+    <circle cx="98"  cy="99"  r="2.1" fill="#7EB8C9" opacity="0.38"/>
+    <circle cx="114" cy="92"  r="2.1" fill="#7EB8C9" opacity="0.38"/>
+
+    <!-- Row 3 -->
+    <circle cx="10"  cy="75"  r="1.8" fill="#7EB8C9" opacity="0.22"/>
+    <circle cx="26"  cy="82"  r="1.8" fill="#7EB8C9" opacity="0.22"/>
+    <circle cx="44"  cy="87"  r="1.8" fill="#7EB8C9" opacity="0.22"/>
+    <circle cx="84"  cy="87"  r="1.8" fill="#7EB8C9" opacity="0.22"/>
+    <circle cx="102" cy="82"  r="1.8" fill="#7EB8C9" opacity="0.22"/>
+    <circle cx="118" cy="75"  r="1.8" fill="#7EB8C9" opacity="0.22"/>
+
+    <!-- Row 4 -->
+    <circle cx="8"   cy="58"  r="1.5" fill="#7EB8C9" opacity="0.11"/>
+    <circle cx="24"  cy="66"  r="1.5" fill="#7EB8C9" opacity="0.11"/>
+    <circle cx="104" cy="66"  r="1.5" fill="#7EB8C9" opacity="0.11"/>
+    <circle cx="120" cy="58"  r="1.5" fill="#7EB8C9" opacity="0.11"/>
+
+    <!-- Row 5 — barely there -->
+    <circle cx="12"  cy="42"  r="1.2" fill="#7EB8C9" opacity="0.05"/>
+    <circle cx="116" cy="42"  r="1.2" fill="#7EB8C9" opacity="0.05"/>
+  </g>
+
+  <!-- Plug body -->
+  <rect x="42" y="18" width="44" height="32" rx="5" fill="none" stroke="#38BDF8" stroke-width="2"/>
+
+  <!-- Prongs -->
+  <line x1="53" y1="50" x2="53" y2="64" stroke="#38BDF8" stroke-width="3" stroke-linecap="round"/>
+  <line x1="75" y1="50" x2="75" y2="64" stroke="#38BDF8" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Connecting dash -->
+  <line x1="64" y1="64" x2="64" y2="72" stroke="#38BDF8" stroke-width="2" stroke-dasharray="3,3" opacity="0.6"/>
+
+  <!-- Socket -->
+  <rect x="36" y="72" width="56" height="34" rx="6" fill="none" stroke="#38BDF8" stroke-width="2"/>
+  <rect x="46" y="79" width="14" height="20" rx="3" fill="#38BDF8" opacity="0.9"/>
+  <rect x="68" y="79" width="14" height="20" rx="3" fill="#38BDF8" opacity="0.9"/>
+
+  <!-- Outer ring redrawn on top to keep stroke crisp over dots -->
+  <circle cx="64" cy="64" r="62" fill="none" stroke="#38BDF8" stroke-width="2"/>
+
+</svg>

@@ -38,12 +38,12 @@ mkdir -p "$OUT_DIR"
 
 # ── Type-check ────────────────────────────────────────────────────────────────
 log "Running type-check..."
-pnpm --filter extension type-check
+pnpm --filter portdrop type-check
 ok "Type-check passed."
 
 # ── Compile TypeScript ────────────────────────────────────────────────────────
 log "Compiling TypeScript..."
-pnpm --filter extension build
+pnpm --filter portdrop build
 ok "Compiled to $EXT_DIR/dist"
 
 # ── Package .vsix ─────────────────────────────────────────────────────────────

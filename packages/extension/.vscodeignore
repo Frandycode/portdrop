@@ -1,0 +1,24 @@
+# Source files — compiled to dist/, not needed in package
+src/**
+
+# Extra brand assets — not needed at runtime
+assets/extra/**
+
+# TypeScript config
+tsconfig.json
+
+# Test files
+**/*.test.ts
+**/*.spec.ts
+**/test/**
+**/tests/**
+
+# Dev tooling
+.eslintrc*
+.prettierrc*
+.editorconfig
+
+# Misc
+**/*.map
+.DS_Store
+*.vsix

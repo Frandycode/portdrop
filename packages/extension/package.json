@@ -1,18 +1,19 @@
 {
-  "name": "extension",
+  "name": "portdrop",
   "displayName": "PortDrop",
   "description": "Share your running local app via a QR code. You control the window. You control the clock.",
   "version": "0.1.0",
-  "publisher": "frandycode",
+  "publisher": "codebreeder",
   "author": {
     "name": "Frandy Slueue",
+    "alias": "CodeBreeder",
     "email": "frandyslueue@gmail.com",
     "url": "https://frandycode.dev"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/frandycode/portdrop"
+    "url": "https://github.com/frandycode/codebreeder-dev/portdrop"
   },
   "engines": {
     "vscode": "^1.89.0"
