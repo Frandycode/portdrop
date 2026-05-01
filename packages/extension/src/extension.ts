@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────────────────────
  * Author   : Frandy Slueue
- * Alias    : CodeBreeder
+ * Alias    : @CodeBreeder
  * Title    : Software Engineering · DevOps Security · IT Ops
  * Portfolio: https://frandycode.dev
  * GitHub   : https://github.com/frandycode
@@ -18,6 +18,7 @@ import { PortDetector } from './portDetector';
 import { resolveCloudflared } from './tunnel/installer';
 import { sessionStore } from './store/sessionStore';
 import { startRelay, stopRelay } from './relay/server';
+import { SidebarProvider } from './webview/SidebarProvider';
 
 let statusBar: StatusBarManager;
 let session: SessionManager;
@@ -26,7 +27,13 @@ export function activate(context: vscode.ExtensionContext): void {
   console.log('[PortDrop] Extension activated.');
 
   statusBar = new StatusBarManager();
-  session   = new SessionManager(context, statusBar);
+
+  const sidebar = new SidebarProvider(context.extensionUri);
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider(SidebarProvider.VIEW_ID, sidebar),
+  );
+
+  session = new SessionManager(context, statusBar, sidebar);
 
   const detector = new PortDetector();
 

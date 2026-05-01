@@ -1,5 +1,5 @@
 {
-  "name": "portdrop",
+  "name": "extension",
   "displayName": "PortDrop",
   "description": "Share your running local app via a QR code. You control the window. You control the clock.",
   "version": "0.1.0",

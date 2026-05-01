@@ -19,6 +19,7 @@ import { startTunnel, stopTunnel } from './tunnel/cloudflare';
 import { generateQRDataUri } from './qrGenerator';
 import { sessionStore } from './store/sessionStore';
 import { TTLOption } from './store/types';
+import { SidebarProvider } from './webview/SidebarProvider';
 
 export interface SessionConfig {
   port: number;
@@ -53,7 +54,17 @@ export class SessionManager {
   constructor(
     private readonly context: vscode.ExtensionContext,
     private readonly statusBar: StatusBarManager,
-  ) {}
+    private readonly sidebar: SidebarProvider,
+  ) {
+    // ── Handle messages sent from the sidebar React UI ───────────────────────
+    sidebar.onMessage((msg) => {
+      switch (msg.type) {
+        case 'REQUEST_STOP':             this.stop();          break;
+        case 'REQUEST_COPY_URL':         this.copyUrl();       break;
+        case 'REQUEST_OPEN_DASHBOARD':   this.openDashboard(); break;
+      }
+    });
+  }
 
   // ── Start ─────────────────────────────────────────────────────────────────
 
@@ -120,8 +131,16 @@ export class SessionManager {
         // React to store-driven expiry (TTL reached or one-time-scan burned)
         sessionStore.once('expired', (id: string) => {
           if (id === record.sessionId) {
+            this.sidebar.post({ type: 'SESSION_EXPIRED' });
             vscode.window.showInformationMessage('[PortDrop] Session TTL reached. Tunnel closed.');
             this.stop();
+          }
+        });
+
+        // Forward scan events to sidebar in real time
+        sessionStore.on('scanned', (id: string, count: number) => {
+          if (id === record.sessionId) {
+            this.sidebar.post({ type: 'SCAN_RECEIVED', scanCount: count });
           }
         });
 
@@ -137,6 +156,17 @@ export class SessionManager {
         };
 
         this.statusBar.setActive(record.expiresAt, result.publicUrl);
+
+        // ── Notify sidebar ─────────────────────────────────────────────────
+        this.sidebar.post({
+          type:      'SESSION_STARTED',
+          sessionId: record.sessionId,
+          publicUrl: result.publicUrl,
+          qrDataUri,
+          expiresAt: record.expiresAt.toISOString(),
+          ttl,
+          port,
+        });
 
         vscode.window.showInformationMessage(
           `[PortDrop] Session live → ${result.publicUrl}`,
@@ -180,6 +210,7 @@ export class SessionManager {
     };
 
     this.statusBar.setIdle();
+    this.sidebar.post({ type: 'SESSION_STOPPED' });
     vscode.window.showInformationMessage('[PortDrop] Session stopped.');
   }
 
