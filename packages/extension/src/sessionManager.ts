@@ -29,7 +29,7 @@ export interface SessionConfig {
 }
 
 export interface SessionState {
-  active: boolean;
+  active: boolean;          
   publicUrl: string | null;
   qrDataUri: string | null;
   startedAt: Date | null;
@@ -77,15 +77,39 @@ export class SessionManager {
     // ── Pick TTL ────────────────────────────────────────────────────────────
     const ttlPick = await vscode.window.showQuickPick(
       [
-        { label: '$(clock) 15 minutes', ttl: '15m' as TTLOption },
-        { label: '$(clock) 1 hour',     ttl: '1h'  as TTLOption },
-        { label: '$(clock) 4 hours',    ttl: '4h'  as TTLOption },
+        { label: '$(clock) 15 minutes', ttl: '15m' as TTLOption | 'custom' },
+        { label: '$(clock) 1 hour',     ttl: '1h'  as TTLOption | 'custom' },
+        { label: '$(clock) 4 hours',    ttl: '4h'  as TTLOption | 'custom' },
+        { label: '$(edit) Custom...',   ttl: 'custom' as TTLOption | 'custom' },
       ],
       { title: 'PortDrop — How long should this session last?' },
     );
     if (!ttlPick) return;
 
-    const ttl = ttlPick.ttl;
+    let ttl: TTLOption;
+    let customMs: number | undefined;
+
+    if (ttlPick.ttl === 'custom') {
+      const input = await vscode.window.showInputBox({
+        title: 'PortDrop — Custom TTL',
+        prompt: 'Enter duration (e.g. 30m, 2h, 90m)',
+        placeHolder: '30m',
+        validateInput: (v) => {
+          if (/^\d+[mh]$/.test(v)) return null;
+          return 'Format: number + m or h (e.g. 30m, 2h)';
+        },
+      });
+      if (!input) return;
+
+      const trimmed = input.trim();
+      const num = parseInt(trimmed);
+      const mins = trimmed.endsWith('h') ? num * 60 : num;
+      customMs = mins * 60 * 1000;
+      ttl = '1h'; // placeholder, customMs overrides
+      vscode.window.showInformationMessage(`[PortDrop] Custom session: ${trimmed}`);
+    } else {
+      ttl = ttlPick.ttl as TTLOption;
+    }
 
     // ── Resolve binary ───────────────────────────────────────────────────────
     let binaryPath: string;
@@ -116,18 +140,20 @@ export class SessionManager {
           this.stop();
         });
 
-        const qrDataUri = await generateQRDataUri(result.publicUrl);
-
         // Register with the session store — store owns TTL scheduling
         const record = sessionStore.create({
           publicUrl:       result.publicUrl,
-          qrDataUri,
+          qrDataUri:       '',
           port,
           ttl,
           oneTimeScan:     false,
           codeViewEnabled: false,
         });
 
+
+        // Generate QR — points to relay redirect which logs scan then redirects to app
+        const qrDataUri  = await generateQRDataUri(result.publicUrl);
+        record.qrDataUri = qrDataUri;
         // React to store-driven expiry (TTL reached or one-time-scan burned)
         sessionStore.once('expired', (id: string) => {
           if (id === record.sessionId) {

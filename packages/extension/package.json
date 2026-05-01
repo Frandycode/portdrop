@@ -72,16 +72,25 @@
         {
           "id": "portdrop.sessionView",
           "name": "Session",
-          "type": "webview"
+          "type": "webview",
+          "icon": "assets/sidebar-icon.svg"
         }
       ]
     },
     "menus": {
       "commandPalette": [
-        { "command": "portdrop.start" },
-        { "command": "portdrop.stop" },
-        { "command": "portdrop.openDashboard" },
-        { "command": "portdrop.copyUrl" }
+        {
+          "command": "portdrop.start"
+        },
+        {
+          "command": "portdrop.stop"
+        },
+        {
+          "command": "portdrop.openDashboard"
+        },
+        {
+          "command": "portdrop.copyUrl"
+        }
       ]
     },
     "configuration": {
@@ -90,7 +99,11 @@
         "portdrop.defaultTTL": {
           "type": "string",
           "default": "1h",
-          "enum": ["15m", "1h", "4h"],
+          "enum": [
+            "15m",
+            "1h",
+            "4h"
+          ],
           "description": "Default session time-to-live."
         },
         "portdrop.autoDetectPort": {
@@ -107,26 +120,28 @@
           "type": "array",
           "default": [],
           "description": "Additional file paths or patterns to exclude from Code View.",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
       }
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "watch": "tsc -watch -p tsconfig.json",
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --platform=node --format=cjs",
+    "watch": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --platform=node --format=cjs --watch",
     "package": "bash ../../scripts/package-extension.sh",
     "lint": "eslint src --ext ts",
     "type-check": "tsc --noEmit"
   },
-  "dependencies": {
-    "qrcode": "^1.5.3"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/node": "^20.12.7",
-    "@types/vscode": "^1.89.0",
     "@types/qrcode": "^1.5.5",
-    "typescript": "^5.4.5",
-    "@vscode/vsce": "^2.26.0"
+    "@types/vscode": "^1.89.0",
+    "@vscode/vsce": "^2.26.0",
+    "esbuild": "^0.28.0",
+    "qrcode": "^1.5.3",
+    "typescript": "^5.4.5"
   }
 }

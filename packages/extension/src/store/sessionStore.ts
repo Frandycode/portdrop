@@ -72,12 +72,13 @@ export class SessionStore extends EventEmitter {
     qrDataUri: string;
     port: number;
     ttl: TTLOption;
+    customMs?: number;
     oneTimeScan: boolean;
     codeViewEnabled: boolean;
   }): SessionRecord {
     const sessionId = this.generateId();
     const startedAt = new Date();
-    const expiresAt = new Date(startedAt.getTime() + TTL_MS[params.ttl]);
+    const expiresAt = new Date(startedAt.getTime() + (params.customMs ?? TTL_MS[params.ttl]));
 
     const record: SessionRecord = {
       sessionId,

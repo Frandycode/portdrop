@@ -186,9 +186,9 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     </div>
     <div class="scans">Scans: <span id="scan-count">0</span></div>
     <div class="actions">
-      <button class="primary" onclick="send('REQUEST_COPY_URL')">Copy URL</button>
-      <button onclick="send('REQUEST_OPEN_DASHBOARD')">Open in Browser</button>
-      <button class="danger" onclick="send('REQUEST_STOP')">Stop Session</button>
+      <button class="primary" id="btn-copy">Copy URL</button>
+      <button id="btn-dashboard">Open in Browser</button>
+      <button class="danger" id="btn-stop">Stop Session</button>
     </div>
   </div>
 
@@ -206,6 +206,34 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     function send(type) {
       vscode.postMessage({ type });
     }
+
+    // ── Button feedback — flash label then restore ─────────────────────────
+    function flashButton(id, feedback, duration) {
+      const btn = document.getElementById(id);
+      const original = btn.textContent;
+      btn.textContent = feedback;
+      btn.disabled = true;
+      btn.style.opacity = '0.7';
+      setTimeout(() => {
+        btn.textContent = original;
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      }, duration || 1500);
+    }
+
+    // ── Button event listeners (inline onclick blocked by CSP) ─────────────
+    document.getElementById('btn-copy').addEventListener('click', () => {
+      send('REQUEST_COPY_URL');
+      flashButton('btn-copy', '\u2713 Copied!', 1500);
+    });
+    document.getElementById('btn-dashboard').addEventListener('click', () => {
+      send('REQUEST_OPEN_DASHBOARD');
+      flashButton('btn-dashboard', '\u2197 Opening...', 1000);
+    });
+    document.getElementById('btn-stop').addEventListener('click', () => {
+      send('REQUEST_STOP');
+      flashButton('btn-stop', '\u23f9 Stopping...', 2000);
+    });
 
     // ── Show a named view, hide the others ─────────────────────────────────
     function showView(name) {

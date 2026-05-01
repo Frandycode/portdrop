@@ -49,7 +49,7 @@ ok "Compiled to $EXT_DIR/dist"
 # ── Package .vsix ─────────────────────────────────────────────────────────────
 log "Bundling .vsix..."
 cd "$EXT_DIR"
-pnpm exec vsce package --no-dependencies --out "$OUT_DIR"
+pnpm exec vsce package --out "$OUT_DIR"
 
 VSIX_FILE=$(ls "$OUT_DIR"/*.vsix 2>/dev/null | head -n 1)
 [[ -z "$VSIX_FILE" ]] && fail "No .vsix file found in $OUT_DIR"
