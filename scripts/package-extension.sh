@@ -38,7 +38,7 @@ mkdir -p "$OUT_DIR"
 
 # ── Type-check ────────────────────────────────────────────────────────────────
 log "Running type-check..."
-pnpm --filter portdrop type-check
+cd packages/extension && npx tsc --noEmit && cd ../..
 ok "Type-check passed."
 
 # ── Compile TypeScript ────────────────────────────────────────────────────────
