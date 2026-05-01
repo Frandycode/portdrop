@@ -38,7 +38,7 @@ mkdir -p "$OUT_DIR"
 
 # ── Type-check ────────────────────────────────────────────────────────────────
 log "Running type-check..."
-cd packages/extension && npx tsc --noEmit && cd ../..
+cd "$EXT_DIR" && npx tsc --noEmit && cd "$ROOT_DIR"
 ok "Type-check passed."
 
 # ── Compile TypeScript ────────────────────────────────────────────────────────
