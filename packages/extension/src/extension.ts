@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────────────────────────────────────
  * Author   : Frandy Slueue
- * Alias    : @CodeBreeder
+ * Alias    : CodeBreeder
  * Title    : Software Engineering · DevOps Security · IT Ops
  * Portfolio: https://frandycode.dev
  * GitHub   : https://github.com/frandycode
@@ -17,6 +17,7 @@ import { SessionManager } from './sessionManager';
 import { PortDetector } from './portDetector';
 import { resolveCloudflared } from './tunnel/installer';
 import { sessionStore } from './store/sessionStore';
+import { startRelay, stopRelay } from './relay/server';
 
 let statusBar: StatusBarManager;
 let session: SessionManager;
@@ -34,6 +35,11 @@ export function activate(context: vscode.ExtensionContext): void {
   // Errors surface only when the user actually tries to start a session.
   resolveCloudflared(context).catch((err) => {
     console.warn('[PortDrop] cloudflared preflight skipped:', err.message);
+  });
+
+  // ── Start local relay server ───────────────────────────────────────────────
+  startRelay().catch((err) => {
+    vscode.window.showErrorMessage(`[PortDrop] Relay failed to start: ${err.message}`);
   });
 
   // ── Commands ──────────────────────────────────────────────────────────────
@@ -64,5 +70,6 @@ export function activate(context: vscode.ExtensionContext): void {
 export function deactivate(): void {
   session?.stop();
   sessionStore.clear();
+  stopRelay();
   console.log('[PortDrop] Extension deactivated.');
 }

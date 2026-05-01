@@ -35,7 +35,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
 
       {/* App preview fills remaining height */}
       <div className="flex flex-1 overflow-hidden">
-        <AppPreview tunnelUrl={session.tunnelUrl} />
+        <AppPreview tunnelUrl={session.publicUrl} />
 
         {/* TODO (Phase 2): CodeView tab rendered here when session.codeViewEnabled */}
       </div>
