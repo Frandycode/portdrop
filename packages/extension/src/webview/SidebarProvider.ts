@@ -120,7 +120,9 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       text-align: center;
       color: var(--pd-muted);
     }
-    .idle .logo { font-size: 22px; font-weight: 700; color: var(--pd-cyan); letter-spacing: 1px; }
+    .idle .logo { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .idle .logo svg { filter: drop-shadow(0 4px 12px rgba(196,133,58,0.35)); }
+    .idle .logo-wordmark { font-size: 15px; font-weight: 700; color: #D4A853; letter-spacing: 3px; text-transform: uppercase; }
     .idle code  { font-size: 11px; background: var(--pd-surface); padding: 2px 6px; border-radius: 4px; }
 
     /* ── Active state ── */
@@ -169,7 +171,106 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
   <!-- Idle -->
   <div id="view-idle" class="idle">
-    <div class="logo">PortDrop</div>
+    <div class="logo">
+      <!-- Double-ring logo · Old Jeans palette · dot fill fades bottom→top -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="96" height="96" fill="none">
+        <defs>
+          <!-- clip to inner ring so dots + plug never touch it -->
+          <clipPath id="sb-inner-clip"><circle cx="60" cy="60" r="37"/></clipPath>
+          <!-- vertical gradient mask: solid at bottom, transparent at top -->
+          <linearGradient id="sb-dot-fade" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#000"/>
+            <stop offset="30%"  stop-color="#000"/>
+            <stop offset="70%"  stop-color="#888"/>
+            <stop offset="100%" stop-color="#fff"/>
+          </linearGradient>
+          <mask id="sb-dot-mask" maskUnits="userSpaceOnUse" x="23" y="23" width="74" height="74">
+            <rect x="23" y="23" width="74" height="74" fill="url(#sb-dot-fade)"/>
+          </mask>
+        </defs>
+
+        <!-- OUTER ring -->
+        <circle cx="60" cy="60" r="56" stroke="#C48540" stroke-width="2"/>
+
+        <!-- INNER ring — 10px gap from outer -->
+        <circle cx="60" cy="60" r="44" fill="rgba(14,31,58,0.96)" stroke="#C48540" stroke-width="1.4"/>
+
+        <!-- dot field inside inner ring, fading upward -->
+        <g clip-path="url(#sb-inner-clip)" mask="url(#sb-dot-mask)">
+          <!-- row 1 — bottom, full opacity -->
+          <circle cx="40" cy="97" r="1.6" fill="#C48540" opacity="0.85"/>
+          <circle cx="48" cy="99" r="1.7" fill="#D4A853" opacity="0.85"/>
+          <circle cx="56" cy="100" r="1.7" fill="#C48540" opacity="0.85"/>
+          <circle cx="64" cy="100" r="1.7" fill="#D4A853" opacity="0.85"/>
+          <circle cx="72" cy="99" r="1.7" fill="#C48540" opacity="0.85"/>
+          <circle cx="80" cy="97" r="1.6" fill="#D4A853" opacity="0.85"/>
+          <!-- row 2 -->
+          <circle cx="36" cy="91" r="1.5" fill="#C48540" opacity="0.75"/>
+          <circle cx="44" cy="93" r="1.6" fill="#D4A853" opacity="0.80"/>
+          <circle cx="52" cy="94" r="1.6" fill="#C48540" opacity="0.80"/>
+          <circle cx="60" cy="94" r="1.6" fill="#D4A853" opacity="0.80"/>
+          <circle cx="68" cy="94" r="1.6" fill="#C48540" opacity="0.80"/>
+          <circle cx="76" cy="93" r="1.6" fill="#D4A853" opacity="0.80"/>
+          <circle cx="84" cy="91" r="1.5" fill="#C48540" opacity="0.75"/>
+          <!-- row 3 -->
+          <circle cx="38" cy="84" r="1.4" fill="#D4A853" opacity="0.65"/>
+          <circle cx="46" cy="86" r="1.5" fill="#C48540" opacity="0.70"/>
+          <circle cx="54" cy="87" r="1.5" fill="#D4A853" opacity="0.70"/>
+          <circle cx="62" cy="87" r="1.5" fill="#C48540" opacity="0.70"/>
+          <circle cx="70" cy="87" r="1.5" fill="#D4A853" opacity="0.70"/>
+          <circle cx="78" cy="86" r="1.5" fill="#C48540" opacity="0.65"/>
+          <circle cx="84" cy="84" r="1.4" fill="#D4A853" opacity="0.60"/>
+          <!-- row 4 -->
+          <circle cx="34" cy="77" r="1.2" fill="#C48540" opacity="0.50"/>
+          <circle cx="42" cy="79" r="1.3" fill="#D4A853" opacity="0.55"/>
+          <circle cx="50" cy="80" r="1.4" fill="#C48540" opacity="0.58"/>
+          <circle cx="58" cy="80" r="1.4" fill="#D4A853" opacity="0.55"/>
+          <circle cx="66" cy="80" r="1.4" fill="#C48540" opacity="0.55"/>
+          <circle cx="74" cy="79" r="1.3" fill="#D4A853" opacity="0.55"/>
+          <circle cx="82" cy="77" r="1.2" fill="#C48540" opacity="0.50"/>
+          <!-- row 5 -->
+          <circle cx="36" cy="70" r="1.1" fill="#D4A853" opacity="0.40"/>
+          <circle cx="44" cy="72" r="1.2" fill="#C48540" opacity="0.42"/>
+          <circle cx="52" cy="73" r="1.2" fill="#D4A853" opacity="0.42"/>
+          <circle cx="60" cy="73" r="1.2" fill="#C48540" opacity="0.42"/>
+          <circle cx="68" cy="73" r="1.2" fill="#D4A853" opacity="0.40"/>
+          <circle cx="76" cy="72" r="1.2" fill="#C48540" opacity="0.40"/>
+          <circle cx="82" cy="70" r="1.1" fill="#D4A853" opacity="0.35"/>
+          <!-- row 6 — fading out -->
+          <circle cx="30" cy="63" r="1.0" fill="#C48540" opacity="0.28"/>
+          <circle cx="38" cy="65" r="1.1" fill="#D4A853" opacity="0.30"/>
+          <circle cx="46" cy="66" r="1.1" fill="#C48540" opacity="0.30"/>
+          <circle cx="76" cy="65" r="1.1" fill="#D4A853" opacity="0.28"/>
+          <circle cx="84" cy="63" r="1.0" fill="#C48540" opacity="0.25"/>
+          <circle cx="90" cy="63" r="1.0" fill="#D4A853" opacity="0.22"/>
+        </g>
+
+        <!-- PLUG — centered in inner ring: span y=32→88, center y=60 = ring center ✓ -->
+        <!-- top gap: 32-16=16px  bottom gap: 104-88=16px  equal on both sides     -->
+        <rect x="48" y="32" width="24" height="18" rx="3"
+              fill="#D4A853" fill-opacity="0.13" stroke="#D4A853" stroke-width="1.4"/>
+        <!-- prongs -->
+        <line x1="54" y1="50" x2="54" y2="60" stroke="#D4A853" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="66" y1="50" x2="66" y2="60" stroke="#D4A853" stroke-width="1.8" stroke-linecap="round"/>
+        <!-- dashed connector -->
+        <line x1="60" y1="60" x2="60" y2="66"
+              stroke="#C48540" stroke-width="1.2" stroke-dasharray="2,2" opacity="0.85"/>
+        <!-- socket box -->
+        <rect x="44" y="66" width="32" height="22" rx="4"
+              fill="rgba(196,133,58,0.08)" stroke="#C48540" stroke-width="1.4"/>
+        <!-- left port -->
+        <rect x="50" y="71" width="9" height="12" rx="2" fill="#C48540" opacity="0.92"/>
+        <!-- right port -->
+        <rect x="61" y="71" width="9" height="12" rx="2" fill="#C48540" opacity="0.92"/>
+
+        <!-- rivet dots on outer ring, cardinal points -->
+        <circle cx="60"  cy="4"   r="2.5" fill="#C48540" opacity="0.70"/>
+        <circle cx="116" cy="60"  r="2.5" fill="#C48540" opacity="0.70"/>
+        <circle cx="60"  cy="116" r="2.5" fill="#C48540" opacity="0.70"/>
+        <circle cx="4"   cy="60"  r="2.5" fill="#C48540" opacity="0.70"/>
+      </svg>
+      <span class="logo-wordmark">PortDrop</span>
+    </div>
     <p>No active session.</p>
     <p>Run <code>PortDrop: Start Session</code><br/>from the Command Palette.</p>
   </div>
