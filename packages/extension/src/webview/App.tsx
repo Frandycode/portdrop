@@ -14,10 +14,10 @@
 import { useEffect, useReducer } from 'react';
 import { ExtensionMessage, SessionStartedMessage, ScanReceivedMessage } from './messages';
 import { vscode } from './vscode-api';
-import { QRPanel }      from './components/QRPanel';
-import { TTLClock }     from './components/TTLClock';
+import { QRPanel }       from './components/QRPanel';
+import { TTLClock }      from './components/TTLClock';
 import { SessionConfig } from './components/SessionConfig';
-import { AccessLog }    from './components/AccessLog';
+import { AccessLog }     from './components/AccessLog';
 
 // ── Domain types (consumed by child components in later steps) ────────────────
 
@@ -121,81 +121,64 @@ function Skeleton() {
   );
 }
 
+// Dot grid for the idle logo — 16×16 regular grid, radial mask fades toward center.
+const LOGO_DOTS: JSX.Element[] = [];
+for (let row = 0; row < 16; row++) {
+  for (let col = 0; col < 16; col++) {
+    LOGO_DOTS.push(
+      <circle key={`${row}-${col}`} cx={38 + col * 7} cy={38 + row * 7} r={1.3} />,
+    );
+  }
+}
+
 function IdleView() {
   return (
     <div className="pd-idle">
       <div className="pd-idle-logo">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="96" height="96" fill="none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="96" height="96" fill="none">
           <defs>
-            <clipPath id="sb-inner-clip"><circle cx="60" cy="60" r="37" /></clipPath>
-            <linearGradient id="sb-dot-fade" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%"   stopColor="#000" />
-              <stop offset="30%"  stopColor="#000" />
-              <stop offset="70%"  stopColor="#888" />
-              <stop offset="100%" stopColor="#fff" />
-            </linearGradient>
-            <mask id="sb-dot-mask" maskUnits="userSpaceOnUse" x="23" y="23" width="74" height="74">
-              <rect x="23" y="23" width="74" height="74" fill="url(#sb-dot-fade)" />
+            <clipPath id="pd-inner-clip">
+              <circle cx="90" cy="90" r="60" />
+            </clipPath>
+            <radialGradient id="pd-mask-grad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%"   stopColor="black" />
+              <stop offset="45%"  stopColor="black" />
+              <stop offset="100%" stopColor="white" />
+            </radialGradient>
+            <mask id="pd-dot-mask">
+              <circle cx="90" cy="90" r="60" fill="url(#pd-mask-grad)" />
             </mask>
           </defs>
-          <circle cx="60" cy="60" r="56" stroke="#C48540" strokeWidth="2" />
-          <circle cx="60" cy="60" r="44" fill="rgba(14,31,58,0.96)" stroke="#C48540" strokeWidth="1.4" />
-          <g clipPath="url(#sb-inner-clip)" mask="url(#sb-dot-mask)">
-            <circle cx="40" cy="97"  r="1.6" fill="#C48540" opacity="0.85" />
-            <circle cx="48" cy="99"  r="1.7" fill="#D4A853" opacity="0.85" />
-            <circle cx="56" cy="100" r="1.7" fill="#C48540" opacity="0.85" />
-            <circle cx="64" cy="100" r="1.7" fill="#D4A853" opacity="0.85" />
-            <circle cx="72" cy="99"  r="1.7" fill="#C48540" opacity="0.85" />
-            <circle cx="80" cy="97"  r="1.6" fill="#D4A853" opacity="0.85" />
-            <circle cx="36" cy="91"  r="1.5" fill="#C48540" opacity="0.75" />
-            <circle cx="44" cy="93"  r="1.6" fill="#D4A853" opacity="0.80" />
-            <circle cx="52" cy="94"  r="1.6" fill="#C48540" opacity="0.80" />
-            <circle cx="60" cy="94"  r="1.6" fill="#D4A853" opacity="0.80" />
-            <circle cx="68" cy="94"  r="1.6" fill="#C48540" opacity="0.80" />
-            <circle cx="76" cy="93"  r="1.6" fill="#D4A853" opacity="0.80" />
-            <circle cx="84" cy="91"  r="1.5" fill="#C48540" opacity="0.75" />
-            <circle cx="38" cy="84"  r="1.4" fill="#D4A853" opacity="0.65" />
-            <circle cx="46" cy="86"  r="1.5" fill="#C48540" opacity="0.70" />
-            <circle cx="54" cy="87"  r="1.5" fill="#D4A853" opacity="0.70" />
-            <circle cx="62" cy="87"  r="1.5" fill="#C48540" opacity="0.70" />
-            <circle cx="70" cy="87"  r="1.5" fill="#D4A853" opacity="0.70" />
-            <circle cx="78" cy="86"  r="1.5" fill="#C48540" opacity="0.65" />
-            <circle cx="84" cy="84"  r="1.4" fill="#D4A853" opacity="0.60" />
-            <circle cx="34" cy="77"  r="1.2" fill="#C48540" opacity="0.50" />
-            <circle cx="42" cy="79"  r="1.3" fill="#D4A853" opacity="0.55" />
-            <circle cx="50" cy="80"  r="1.4" fill="#C48540" opacity="0.58" />
-            <circle cx="58" cy="80"  r="1.4" fill="#D4A853" opacity="0.55" />
-            <circle cx="66" cy="80"  r="1.4" fill="#C48540" opacity="0.55" />
-            <circle cx="74" cy="79"  r="1.3" fill="#D4A853" opacity="0.55" />
-            <circle cx="82" cy="77"  r="1.2" fill="#C48540" opacity="0.50" />
-            <circle cx="36" cy="70"  r="1.1" fill="#D4A853" opacity="0.40" />
-            <circle cx="44" cy="72"  r="1.2" fill="#C48540" opacity="0.42" />
-            <circle cx="52" cy="73"  r="1.2" fill="#D4A853" opacity="0.42" />
-            <circle cx="60" cy="73"  r="1.2" fill="#C48540" opacity="0.42" />
-            <circle cx="68" cy="73"  r="1.2" fill="#D4A853" opacity="0.40" />
-            <circle cx="76" cy="72"  r="1.2" fill="#C48540" opacity="0.40" />
-            <circle cx="82" cy="70"  r="1.1" fill="#D4A853" opacity="0.35" />
-            <circle cx="30" cy="63"  r="1.0" fill="#C48540" opacity="0.28" />
-            <circle cx="38" cy="65"  r="1.1" fill="#D4A853" opacity="0.30" />
-            <circle cx="46" cy="66"  r="1.1" fill="#C48540" opacity="0.30" />
-            <circle cx="76" cy="65"  r="1.1" fill="#D4A853" opacity="0.28" />
-            <circle cx="84" cy="63"  r="1.0" fill="#C48540" opacity="0.25" />
-            <circle cx="90" cy="63"  r="1.0" fill="#D4A853" opacity="0.22" />
+
+          {/* Outer ring */}
+          <circle cx="90" cy="90" r="82" stroke="#C48540" strokeWidth="2.5" />
+          {/* Inner ring */}
+          <circle cx="90" cy="90" r="62" fill="rgba(28,59,107,0.9)" stroke="#C48540" strokeWidth="1.8" />
+
+          {/* Dot grid — clipped to inner ring, fades toward center */}
+          <g clipPath="url(#pd-inner-clip)" mask="url(#pd-dot-mask)" fill="#C48540">
+            {LOGO_DOTS}
           </g>
-          <rect x="48" y="32" width="24" height="18" rx="3"
-            fill="#D4A853" fillOpacity="0.13" stroke="#D4A853" strokeWidth="1.4" />
-          <line x1="54" y1="50" x2="54" y2="60" stroke="#D4A853" strokeWidth="1.8" strokeLinecap="round" />
-          <line x1="66" y1="50" x2="66" y2="60" stroke="#D4A853" strokeWidth="1.8" strokeLinecap="round" />
-          <line x1="60" y1="60" x2="60" y2="66"
-            stroke="#C48540" strokeWidth="1.2" strokeDasharray="2,2" opacity="0.85" />
-          <rect x="44" y="66" width="32" height="22" rx="4"
-            fill="rgba(196,133,58,0.08)" stroke="#C48540" strokeWidth="1.4" />
-          <rect x="50" y="71" width="9" height="12" rx="2" fill="#C48540" opacity="0.92" />
-          <rect x="61" y="71" width="9" height="12" rx="2" fill="#C48540" opacity="0.92" />
-          <circle cx="60"  cy="4"   r="2.5" fill="#C48540" opacity="0.70" />
-          <circle cx="116" cy="60"  r="2.5" fill="#C48540" opacity="0.70" />
-          <circle cx="60"  cy="116" r="2.5" fill="#C48540" opacity="0.70" />
-          <circle cx="4"   cy="60"  r="2.5" fill="#C48540" opacity="0.70" />
+
+          {/* Plug */}
+          <rect x="72" y="52" width="36" height="26" rx="4"
+            fill="#D4A853" fillOpacity="0.12" stroke="#D4A853" strokeWidth="1.8" />
+          <line x1="81" y1="78" x2="81" y2="90"
+            stroke="#D4A853" strokeWidth="2.6" strokeLinecap="round" />
+          <line x1="99" y1="78" x2="99" y2="90"
+            stroke="#D4A853" strokeWidth="2.6" strokeLinecap="round" />
+          <line x1="90" y1="90" x2="90" y2="96"
+            stroke="#C48540" strokeWidth="1.8" strokeDasharray="2.5,2.5" opacity="0.8" />
+          <rect x="67" y="97" width="46" height="28" rx="5"
+            fill="rgba(196,133,58,0.07)" stroke="#C48540" strokeWidth="1.8" />
+          <rect x="75"  y="102" width="12" height="16" rx="2.5" fill="#C48540" opacity="0.9" />
+          <rect x="93"  y="102" width="12" height="16" rx="2.5" fill="#C48540" opacity="0.9" />
+
+          {/* Cardinal rivets on outer ring */}
+          <circle cx="90"  cy="8"   r="3.5" fill="#C48540" opacity="0.7" />
+          <circle cx="172" cy="90"  r="3.5" fill="#C48540" opacity="0.7" />
+          <circle cx="90"  cy="172" r="3.5" fill="#C48540" opacity="0.7" />
+          <circle cx="8"   cy="90"  r="3.5" fill="#C48540" opacity="0.7" />
         </svg>
         <span className="pd-wordmark">PortDrop</span>
       </div>
@@ -210,8 +193,23 @@ function ActiveView({ session }: { session: ActiveSession }) {
     <div className="pd-active">
       <QRPanel dataUri={session.qrDataUri} url={session.publicUrl} />
       <TTLClock expiresAt={session.expiresAt} />
+
+      <div className="pd-scans">Scans: <strong>{session.scanCount}</strong></div>
+
+      {session.oneTimeScan && (
+        <div className="pd-ots">&#x26A1; One-time link — burns after first open</div>
+      )}
+
+      {session.pin && (
+        <div className="pd-pin">
+          <span>PIN</span>
+          <span className="pd-pin-val">{session.pin}</span>
+        </div>
+      )}
+
       <SessionConfig />
       <AccessLog />
+
       <div className="pd-actions">
         <button className="pd-btn primary" onClick={() => send('REQUEST_COPY_URL')}>
           Copy URL
@@ -241,7 +239,6 @@ export default function App() {
   const [state, dispatch] = useReducer(reducer, { status: 'loading' });
 
   useEffect(() => {
-    // Fall through to idle if no session message arrives within 400ms.
     const timer = setTimeout(() => dispatch({ type: 'LOADED_IDLE' }), 400);
 
     const handler = (event: MessageEvent<ExtensionMessage>) => {
