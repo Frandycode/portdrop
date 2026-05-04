@@ -13,14 +13,14 @@
 
 interface QRPanelProps {
   dataUri: string;
-  url: string;
+  url:     string;
 }
 
 export function QRPanel({ dataUri, url }: QRPanelProps) {
   return (
-    <section className="qr-panel">
-      <img src={dataUri} alt="PortDrop session QR code" className="qr-image" />
-      <p className="qr-url">{url}</p>
-    </section>
+    <div className="pd-qr">
+      <img src={dataUri} alt="PortDrop session QR code" />
+      <div className="pd-qr-url">{url}</div>
+    </div>
   );
 }
