@@ -13,7 +13,46 @@
 
 'use client';
 
+import { useEffect, useState } from 'react';
+
 export default function HomePage() {
+  const [showBtt, setShowBtt] = useState(false);
+
+  useEffect(() => {
+    // BTT scroll listener
+    const onScroll = () => setShowBtt(window.scrollY > 320);
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    // Mark doc ready so CSS hides animatable elements
+    document.documentElement.classList.add('js-ready');
+
+    // Assign random swing direction to feature cards
+    document.querySelectorAll<HTMLElement>('[data-enter="swing"]').forEach((el, i) => {
+      el.dataset.enter = Math.random() > 0.5 ? 'swing-left' : 'swing-right';
+      el.style.animationDelay = `${i * 0.09}s`;
+    });
+
+    // IntersectionObserver triggers .entered on scroll
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('entered');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12 },
+    );
+    document.querySelectorAll('[data-enter]').forEach((el) => observer.observe(el));
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      observer.disconnect();
+      document.documentElement.classList.remove('js-ready');
+    };
+  }, []);
+
   return (
     <>
       <div className="pd-body">
@@ -59,7 +98,7 @@ export default function HomePage() {
             <a href="#docs">Docs</a>
             <a href="#changelog">Changelog</a>
           </div>
-          <button className="pd-nav-cta" onClick={() => window.open('https://marketplace.visualstudio.com/items?itemName=codebreeder.portdrop','_blank')}>Install →</button>
+          <button className="pd-nav-cta" onClick={() => window.open('https://marketplace.visualstudio.com/items?itemName=codebreeder.portdrop','_blank')}>Install <span className="pd-nav-arrow">→</span></button>
         </nav>
 
         {/* HERO */}
@@ -86,7 +125,7 @@ export default function HomePage() {
             <div className="pd-cta-row">
               <button className="pd-btn-primary" onClick={() => window.open('https://marketplace.visualstudio.com/items?itemName=codebreeder.portdrop','_blank')}>
                 Get the Extension
-                <span style={{fontSize:'16px',lineHeight:'1'}}>→</span>
+                <span className="pd-nav-arrow" style={{fontSize:'16px',lineHeight:'1'}}>→</span>
               </button>
               <button className="pd-btn-secondary" onClick={() => window.open('https://github.com/Frandycode/portdrop','_blank')}>View on GitHub</button>
             </div>
@@ -218,6 +257,186 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* ── SECTIONS ── */}
+        <div className="pd-sections-wrap">
+
+          {/* FEATURES */}
+          <section id="features" className="pd-section">
+            <div className="pd-section-eyebrow"><span className="pd-pulse"/>What it does</div>
+            <h2 className="pd-section-title">Built for the way<br/>developers actually <span className="accent">work</span></h2>
+            <div className="pd-features">
+              {[
+                {
+                  icon: (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="#C48540" strokeWidth="1.5"/>
+                      <line x1="12" y1="2" x2="12" y2="22" stroke="#C48540" strokeWidth="1.2" strokeDasharray="3,3" opacity="0.5"/>
+                      <circle cx="12" cy="12" r="3" fill="#C48540" opacity="0.8"/>
+                    </svg>
+                  ),
+                  name: 'Zero-install tunneling',
+                  desc: 'Cloudflare tunnel spins up automatically. No accounts, no config files, no API keys.',
+                },
+                {
+                  icon: (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="9" stroke="#C48540" strokeWidth="1.5"/>
+                      <line x1="12" y1="5" x2="12" y2="12" stroke="#C48540" strokeWidth="1.8" strokeLinecap="round"/>
+                      <line x1="12" y1="12" x2="16" y2="15" stroke="#C48540" strokeWidth="1.8" strokeLinecap="round"/>
+                    </svg>
+                  ),
+                  name: 'TTL-controlled sessions',
+                  desc: 'Choose 15 min, 1 h, 4 h, or a custom window. The tunnel closes itself — no cleanup needed.',
+                },
+                {
+                  icon: (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <rect x="3" y="3" width="8" height="8" rx="1" stroke="#C48540" strokeWidth="1.4"/>
+                      <rect x="13" y="3" width="8" height="8" rx="1" stroke="#C48540" strokeWidth="1.4"/>
+                      <rect x="3" y="13" width="8" height="8" rx="1" stroke="#C48540" strokeWidth="1.4"/>
+                      <rect x="15" y="15" width="4" height="4" rx="0.5" fill="#C48540" opacity="0.8"/>
+                    </svg>
+                  ),
+                  name: 'QR code sharing',
+                  desc: 'Every session generates a scannable QR. No typing, no copy-paste, no DMs.',
+                },
+                {
+                  icon: (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <polyline points="4,14 4,20 10,20" stroke="#C48540" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <polyline points="20,10 20,4 14,4" stroke="#C48540" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M20 4 L13 11" stroke="#C48540" strokeWidth="1.3" strokeLinecap="round" opacity="0.6"/>
+                      <path d="M4 20 L11 13" stroke="#C48540" strokeWidth="1.3" strokeLinecap="round" opacity="0.6"/>
+                    </svg>
+                  ),
+                  name: 'Auto port detection',
+                  desc: 'Scans for running dev servers (Vite, Next.js, Express, Django) and presents them as a quick-pick.',
+                },
+                {
+                  icon: (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <rect x="2" y="17" width="20" height="4" rx="1.5" stroke="#C48540" strokeWidth="1.4"/>
+                      <rect x="8" y="18.5" width="4" height="1" rx="0.5" fill="#C48540" opacity="0.7"/>
+                      <line x1="5" y1="10" x2="5" y2="17" stroke="#C48540" strokeWidth="1.2" strokeDasharray="2,2" opacity="0.4"/>
+                      <line x1="12" y1="7" x2="12" y2="17" stroke="#C48540" strokeWidth="1.4" strokeLinecap="round"/>
+                      <line x1="19" y1="13" x2="19" y2="17" stroke="#C48540" strokeWidth="1.2" strokeLinecap="round" opacity="0.6"/>
+                    </svg>
+                  ),
+                  name: 'Live countdown',
+                  desc: 'Status bar and sidebar both tick down in real time. You always know exactly how much runway is left.',
+                },
+                {
+                  icon: (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <rect x="3" y="3" width="7" height="7" rx="1" stroke="#C48540" strokeWidth="1.4"/>
+                      <rect x="14" y="3" width="7" height="7" rx="1" stroke="#C48540" strokeWidth="1.4"/>
+                      <rect x="3" y="14" width="7" height="7" rx="1" stroke="#C48540" strokeWidth="1.4"/>
+                      <line x1="14" y1="17.5" x2="21" y2="17.5" stroke="#C48540" strokeWidth="1.4" strokeLinecap="round"/>
+                      <line x1="17.5" y1="14" x2="17.5" y2="21" stroke="#C48540" strokeWidth="1.4" strokeLinecap="round"/>
+                    </svg>
+                  ),
+                  name: 'Sidebar control panel',
+                  desc: 'Start, stop, copy URL, open in browser — all without leaving your editor.',
+                },
+              ].map(({ icon, name, desc }, i) => (
+                <div key={name} className="pd-feature-card" data-enter="swing" style={{animationDelay:`${i * 0.09}s`}}>
+                  <div className="pd-feature-icon">{icon}</div>
+                  <div className="pd-feature-name">{name}</div>
+                  <div className="pd-feature-desc">{desc}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* HOW IT WORKS */}
+          <section id="how" className="pd-section">
+            <div className="pd-section-eyebrow"><span className="pd-pulse"/>Workflow</div>
+            <h2 className="pd-section-title">From zero to <span className="accent">shared</span><br/>in under a minute</h2>
+            <div className="pd-steps">
+              {[
+                { n:'01', name:'Install the extension', desc:'Grab PortDrop from the VS Code Marketplace. One click, no restart required.' },
+                { n:'02', name:'Run PortDrop: Start Session', desc:'Open the command palette (Ctrl+Shift+P) and fire the command. PortDrop scans for running dev servers automatically.' },
+                { n:'03', name:'Pick your port', desc:'Select from the detected servers or type a port number manually. Works with any HTTP server.' },
+                { n:'04', name:'Set your time window', desc:'Choose 15 min, 1 hour, 4 hours, or enter a custom duration like 30m or 2h. The clock starts immediately.' },
+                { n:'05', name:'Share and go', desc:'A Cloudflare tunnel URL and QR code appear in the sidebar. Share either one. The session auto-expires — no cleanup on your end.' },
+              ].map(({ n, name, desc }, i) => (
+                <div key={n} className="pd-step" data-enter={i % 2 === 0 ? 'slide-left' : 'slide-right'} style={{animationDelay:`${i * 0.1}s`}}>
+                  <div className="pd-step-num">{n}</div>
+                  <div>
+                    <div className="pd-step-name">{name}</div>
+                    <div className="pd-step-desc">{desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* DOCS */}
+          <section id="docs" className="pd-section">
+            <div className="pd-section-eyebrow"><span className="pd-pulse"/>Reference</div>
+            <h2 className="pd-section-title">Commands &amp; <span className="accent">config</span></h2>
+            <div className="pd-docs-grid">
+              <div data-enter="depth" style={{animationDelay:'0s'}}>
+                <div className="pd-docs-subtitle">Commands</div>
+                <div className="pd-cmd-list">
+                  {[
+                    { name:'PortDrop: Start Session',   desc:'Detect ports → pick TTL → spin up tunnel' },
+                    { name:'PortDrop: Stop Session',    desc:'Kill the active tunnel immediately' },
+                    { name:'PortDrop: Copy Session URL',desc:'Copy the public URL to clipboard' },
+                    { name:'PortDrop: Open Dashboard',  desc:'Open the tunnel URL in the browser' },
+                  ].map(c => (
+                    <div key={c.name} className="pd-cmd">
+                      <div className="pd-cmd-name">{c.name}</div>
+                      <div className="pd-cmd-desc">{c.desc}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div data-enter="depth" style={{animationDelay:'0.18s'}}>
+                <div className="pd-docs-subtitle">Settings</div>
+                <div className="pd-cfg-list">
+                  {[
+                    { key:'portdrop.defaultTTL',      val:'"15m" | "1h" | "4h"  ·  default: "1h"' },
+                    { key:'portdrop.autoDetectPort',  val:'boolean  ·  default: true' },
+                    { key:'portdrop.showBadge',       val:'boolean  ·  default: true' },
+                    { key:'portdrop.blocklist',       val:'string[]  ·  paths to exclude from Code View' },
+                  ].map(c => (
+                    <div key={c.key} className="pd-cfg">
+                      <div className="pd-cfg-key">{c.key}</div>
+                      <div className="pd-cfg-val">{c.val}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* CHANGELOG */}
+          <section id="changelog" className="pd-section">
+            <div className="pd-section-eyebrow"><span className="pd-pulse"/>History</div>
+            <h2 className="pd-section-title">What&apos;s <span className="accent">shipped</span></h2>
+            <div className="pd-changelog">
+              <div className="pd-cl-entry" data-enter="up">
+                <div>
+                  <div className="pd-cl-ver">v0.1.0</div>
+                  <div className="pd-cl-date">May 2026</div>
+                </div>
+                <ul className="pd-cl-items">
+                  <li>Cloudflare tunnel integration — zero-account, zero-config public URLs</li>
+                  <li>QR code generation in the VS Code sidebar</li>
+                  <li>TTL picker — 15 min, 1 h, 4 h, and custom durations</li>
+                  <li>Auto port detection for common dev servers</li>
+                  <li>Live countdown in sidebar and status bar</li>
+                  <li>Copy URL and Open in Browser from the sidebar</li>
+                  <li>Session auto-expiry — tunnel closes itself at TTL</li>
+                  <li>Activity bar panel with double-ring logo</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+        </div>{/* end pd-sections-wrap */}
+
         {/* FOOTER */}
         <footer className="pd-footer">
           <div>© 2026 · PortDrop</div>
@@ -227,6 +446,15 @@ export default function HomePage() {
           </div>
         </footer>
       </div>
+
+      {/* Back to top */}
+      <button
+        className={`pd-btt${showBtt ? ' visible' : ''}`}
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        aria-label="Back to top"
+      >
+        ↑
+      </button>
     </>
   );
 }

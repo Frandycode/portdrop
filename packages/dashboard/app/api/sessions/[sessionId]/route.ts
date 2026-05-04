@@ -26,13 +26,18 @@ const RELAY_BASE = 'http://127.0.0.1:49491';
  * Returns 404 if the session is expired, burned, or unknown.
  */
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { sessionId: string } },
 ) {
   const { sessionId } = params;
+  const pin = req.nextUrl.searchParams.get('pin');
+
+  const relayUrl = pin
+    ? `${RELAY_BASE}/sessions/${sessionId}?pin=${encodeURIComponent(pin)}`
+    : `${RELAY_BASE}/sessions/${sessionId}`;
 
   try {
-    const relayRes = await fetch(`${RELAY_BASE}/sessions/${sessionId}`, {
+    const relayRes = await fetch(relayUrl, {
       // Short timeout — if the extension isn't running we fail fast
       signal: AbortSignal.timeout(3_000),
     });

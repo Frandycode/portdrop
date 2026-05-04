@@ -27,6 +27,7 @@ export interface SessionStartedMessage {
   expiresAt:  string; // ISO string — Date is not serializable over postMessage
   ttl:        string;
   port:       number;
+  pin?:       string; // raw PIN shown to the developer; undefined = no PIN
 }
 
 export interface SessionStoppedMessage {

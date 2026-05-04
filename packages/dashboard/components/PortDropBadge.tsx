@@ -18,6 +18,8 @@ import { TTLCountdown } from './TTLCountdown';
 
 interface PortDropBadgeProps {
   expiresAt: Date;
+  scanCount: number;
+  oneTimeScan: boolean;
 }
 
 function LogoMark({ size = 16 }: { size?: number }) {
@@ -35,7 +37,7 @@ function LogoMark({ size = 16 }: { size?: number }) {
   );
 }
 
-export function PortDropBadge({ expiresAt }: PortDropBadgeProps) {
+export function PortDropBadge({ expiresAt, scanCount, oneTimeScan }: PortDropBadgeProps) {
   const [minimized, setMinimized] = useState(false);
 
   if (minimized) {
@@ -56,6 +58,16 @@ export function PortDropBadge({ expiresAt }: PortDropBadgeProps) {
       <span className="text-portdrop-cyan font-semibold">PortDrop</span>
       <span className="text-portdrop-border">|</span>
       <TTLCountdown expiresAt={expiresAt} />
+      <span className="text-portdrop-border">|</span>
+      <span className="text-portdrop-muted">
+        {scanCount} scan{scanCount !== 1 ? 's' : ''}
+      </span>
+      {oneTimeScan && (
+        <>
+          <span className="text-portdrop-border">|</span>
+          <span className="text-[#eab308]" title="This link can only be opened once">⚡ one-time</span>
+        </>
+      )}
       <button
         onClick={() => setMinimized(true)}
         className="ml-0.5 text-portdrop-muted hover:text-white transition-colors leading-none"

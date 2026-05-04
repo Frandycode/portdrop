@@ -12,7 +12,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { randomBytes } from 'crypto';
+import { randomBytes, createHash } from 'crypto';
 import { SessionRecord, PublicSession, TTLOption } from './types';
 
 // ── TTL map ───────────────────────────────────────────────────────────────────
@@ -75,6 +75,7 @@ export class SessionStore extends EventEmitter {
     customMs?: number;
     oneTimeScan: boolean;
     codeViewEnabled: boolean;
+    pin?: string;
   }): SessionRecord {
     const sessionId = this.generateId();
     const startedAt = new Date();
@@ -92,6 +93,7 @@ export class SessionStore extends EventEmitter {
       expiresAt,
       status:          'active',
       scanCount:       0,
+      pinHash:         params.pin ? createHash('sha256').update(params.pin).digest('hex') : undefined,
     };
 
     this.sessions.set(sessionId, record);
@@ -109,15 +111,37 @@ export class SessionStore extends EventEmitter {
   }
 
   /**
-   * Returns the public projection of an active session, and increments
-   * the scan count. Returns null if the session is expired, stopped,
-   * or burned (one-time-scan already used).
+   * Checks whether a session exists and is active without touching scan count.
+   * Returns { pinRequired } so the relay can gate access before calling access().
+   * Returns null if the session is not found or already expired/stopped.
    */
-  access(sessionId: string): PublicSession | null {
+  peek(sessionId: string): { pinRequired: boolean } | null {
+    const record = this.sessions.get(sessionId);
+    if (!record || record.status !== 'active') return null;
+    if (new Date() >= record.expiresAt)         return null;
+    return { pinRequired: !!record.pinHash };
+  }
+
+  /**
+   * Returns the public projection of an active session and increments the scan
+   * count. Pass the raw 4-digit PIN when the session is PIN-protected.
+   * Returns null if: session not found/expired, PIN is wrong, or one-time link burned.
+   */
+  access(sessionId: string, pin?: string): PublicSession | null {
     const record = this.sessions.get(sessionId);
 
     if (!record || record.status !== 'active') return null;
     if (new Date() >= record.expiresAt)         return null;
+
+    // PIN verification
+    if (record.pinHash) {
+      if (!pin) return null;
+      const inputHash = createHash('sha256').update(pin).digest('hex');
+      if (inputHash !== record.pinHash) {
+        console.log(`[PortDrop:Store] Wrong PIN for session: ${sessionId}`);
+        return null;
+      }
+    }
 
     // One-time-scan burn
     if (record.oneTimeScan && record.scanCount >= 1) {

@@ -55,20 +55,38 @@ function handleRequest(
   }
 
   // ── GET /sessions/:sessionId ───────────────────────────────────────────────
-  const sessionMatch = url.match(/^\/sessions\/([a-f0-9]{32})$/);
+  const parsed       = new URL(url, 'http://localhost');
+  const sessionMatch = parsed.pathname.match(/^\/sessions\/([a-f0-9]{32})$/);
   if (method === 'GET' && sessionMatch) {
     const sessionId = sessionMatch[1];
-    const data      = sessionStore.access(sessionId);
+    const pin       = parsed.searchParams.get('pin') ?? undefined;
 
-    if (!data) {
+    // Always peek first: confirms session exists and signals PIN requirement
+    const peek = sessionStore.peek(sessionId);
+    if (!peek) {
       json(res, 404, { error: 'Session not found or expired', sessionId });
+      return;
+    }
+
+    // No PIN supplied but session requires one → tell the dashboard to show gate
+    if (peek.pinRequired && !pin) {
+      json(res, 200, { pinRequired: true, sessionId });
+      return;
+    }
+
+    // Full access — verifies PIN (if any) and increments scan count
+    const data = sessionStore.access(sessionId, pin);
+    if (!data) {
+      // PIN was supplied but wrong (session still exists per peek above)
+      const status = pin ? 401 : 404;
+      const error  = pin ? 'Invalid PIN' : 'Session not found or expired';
+      json(res, status, { error, sessionId });
       return;
     }
 
     json(res, 200, {
       sessionId:       data.sessionId,
       publicUrl:       data.publicUrl,
-      // Serialize Date to ISO string for JSON transport
       expiresAt:       data.expiresAt.toISOString(),
       codeViewEnabled: data.codeViewEnabled,
       oneTimeScan:     data.oneTimeScan,

@@ -20,34 +20,50 @@ export interface SessionData {
   scanCount:       number;
 }
 
+export type SessionResult =
+  | { type: 'ok';           data: SessionData }
+  | { type: 'pin-required'; sessionId: string }
+  | { type: 'not-found' };
+
 /**
  * Validates a session ID by calling the local API route, which proxies
  * to the PortDrop extension relay.
  *
- * Returns null if the session is expired, burned, unknown, or the
- * extension relay is unreachable.
+ * Pass `pin` on a second call after the viewer enters their code.
  */
-export async function validateSession(sessionId: string): Promise<SessionData | null> {
+export async function validateSession(
+  sessionId: string,
+  pin?: string,
+): Promise<SessionResult> {
   try {
-    const res = await fetch(
-      `http://localhost:3001/api/sessions/${sessionId}`,
-      { cache: 'no-store' },
-    );
+    const url = pin
+      ? `http://localhost:3001/api/sessions/${sessionId}?pin=${encodeURIComponent(pin)}`
+      : `http://localhost:3001/api/sessions/${sessionId}`;
 
-    if (!res.ok) return null;
+    const res = await fetch(url, { cache: 'no-store' });
+
+    if (!res.ok) return { type: 'not-found' };
 
     const data = await res.json();
 
+    // Relay signals PIN gate — don't expose session data yet
+    if (data.pinRequired === true) {
+      return { type: 'pin-required', sessionId: data.sessionId ?? sessionId };
+    }
+
     return {
-      sessionId:       data.sessionId,
-      publicUrl:       data.publicUrl,
-      expiresAt:       new Date(data.expiresAt), // ISO string → Date
-      codeViewEnabled: data.codeViewEnabled,
-      oneTimeScan:     data.oneTimeScan,
-      scanCount:       data.scanCount,
+      type: 'ok',
+      data: {
+        sessionId:       data.sessionId,
+        publicUrl:       data.publicUrl,
+        expiresAt:       new Date(data.expiresAt),
+        codeViewEnabled: data.codeViewEnabled,
+        oneTimeScan:     data.oneTimeScan,
+        scanCount:       data.scanCount,
+      },
     };
   } catch (err) {
     console.error('[PortDrop:validateSession] Failed:', err);
-    return null;
+    return { type: 'not-found' };
   }
 }

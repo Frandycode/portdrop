@@ -132,6 +132,29 @@ export class SessionManager {
       ttl = ttlPick.ttl as TTLOption;
     }
 
+    // ── Optional PIN ────────────────────────────────────────────────────────
+    const pinPick = await vscode.window.showQuickPick(
+      [
+        { label: '$(globe) No PIN — open access',     pin: false },
+        { label: '$(lock)  PIN protection — 4 digits', pin: true  },
+      ],
+      { title: 'PortDrop — Require a PIN to view this session?' },
+    );
+    if (!pinPick) return;
+
+    let pin: string | undefined;
+    if (pinPick.pin) {
+      const pinInput = await vscode.window.showInputBox({
+        title:         'PortDrop — Set PIN',
+        prompt:        'Enter a 4-digit PIN. Share this with whoever you want to let in.',
+        placeHolder:   '0000',
+        password:      true,
+        validateInput: (v) => /^\d{4}$/.test(v) ? null : 'PIN must be exactly 4 digits (0–9)',
+      });
+      if (!pinInput) return;
+      pin = pinInput;
+    }
+
     // ── Resolve binary ───────────────────────────────────────────────────────
     let binaryPath: string;
     try {
@@ -171,6 +194,7 @@ export class SessionManager {
           customMs,
           oneTimeScan:     false,
           codeViewEnabled: false,
+          pin,
         });
 
 
@@ -218,10 +242,12 @@ export class SessionManager {
           expiresAt: record.expiresAt.toISOString(),
           ttl,
           port,
+          pin,
         });
 
+        const pinNotice = pin ? `  ·  PIN: ${pin}` : '';
         vscode.window.showInformationMessage(
-          `[PortDrop] Session live → ${result.publicUrl}`,
+          `[PortDrop] Session live → ${result.publicUrl}${pinNotice}`,
           'Copy URL',
           'Open Dashboard',
         ).then((action) => {

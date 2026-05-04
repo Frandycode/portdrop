@@ -48,6 +48,9 @@ export interface SessionRecord {
 
   /** How many times the QR has been scanned */
   scanCount: number;
+
+  /** SHA-256 hex hash of the 4-digit PIN; undefined = no PIN required */
+  pinHash?: string;
 }
 
 /** Public-safe projection sent to the dashboard — no internal fields */

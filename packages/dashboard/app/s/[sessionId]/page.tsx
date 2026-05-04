@@ -15,6 +15,7 @@ import { notFound } from 'next/navigation';
 import { AppPreview } from '@/components/AppPreview';
 import { PortDropBadge } from '@/components/PortDropBadge';
 import { TTLCountdown } from '@/components/TTLCountdown';
+import { PinGate } from '@/components/PinGate';
 import { validateSession } from '@/lib/session';
 
 interface SessionPageProps {
@@ -37,10 +38,12 @@ function LogoMark() {
 }
 
 export default async function SessionPage({ params }: SessionPageProps) {
-  const session = await validateSession(params.sessionId);
+  const result = await validateSession(params.sessionId);
 
-  if (!session) notFound();
+  if (result.type === 'not-found') notFound();
+  if (result.type === 'pin-required') return <PinGate sessionId={params.sessionId} />;
 
+  const session = result.data;
   const displayUrl = session.publicUrl.replace(/^https?:\/\//, '');
 
   return (
@@ -58,6 +61,11 @@ export default async function SessionPage({ params }: SessionPageProps) {
           >
             {displayUrl}
           </span>
+          {session.oneTimeScan && (
+            <span className="hidden sm:flex items-center gap-1 rounded border border-[#eab308]/30 bg-[#eab308]/10 px-2 py-0.5 font-mono text-[9px] font-semibold tracking-widest text-[#eab308] uppercase">
+              ⚡ One-time link
+            </span>
+          )}
         </div>
         <TTLCountdown expiresAt={session.expiresAt} />
       </header>
@@ -67,7 +75,11 @@ export default async function SessionPage({ params }: SessionPageProps) {
         {/* TODO (Phase 2): CodeView tab rendered here when session.codeViewEnabled */}
       </div>
 
-      <PortDropBadge expiresAt={session.expiresAt} />
+      <PortDropBadge
+        expiresAt={session.expiresAt}
+        scanCount={session.scanCount}
+        oneTimeScan={session.oneTimeScan}
+      />
     </main>
   );
 }
