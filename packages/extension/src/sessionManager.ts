@@ -67,11 +67,29 @@ export class SessionManager {
         case 'REQUEST_OPEN_DASHBOARD':   this.openDashboard(); break;
       }
     });
+
+    // ── Re-push session state whenever the webview becomes visible ────────────
+    // Handles: opening sidebar after a session started, and returning to it
+    // after navigating to another activity bar panel.
+    sidebar.onViewReady(() => {
+      if (!this.state.active || !this.currentSessionId) return;
+      sidebar.post({
+        type:      'SESSION_STARTED',
+        sessionId: this.currentSessionId,
+        publicUrl: this.state.publicUrl!,
+        qrDataUri: this.state.qrDataUri!,
+        expiresAt: this.state.expiresAt!.toISOString(),
+        ttl:       this.state.config!.ttl,
+        port:      this.state.config!.port,
+      });
+    });
   }
 
   // ── Start ─────────────────────────────────────────────────────────────────
 
   async start(port: number): Promise<void> {
+    this.stoppingIntentionally = false;
+
     if (this.state.active) {
       vscode.window.showWarningMessage('[PortDrop] A session is already active. Stop it first.');
       return;
@@ -224,7 +242,9 @@ export class SessionManager {
       stopTunnel(this.tunnelProcess);
       this.tunnelProcess = null;
     }
-    this.stoppingIntentionally = false;
+    // Do NOT reset stoppingIntentionally here — the 'close' event fires async
+    // after the process actually dies, so the flag must stay true until then.
+    // It is reset at the top of start() before the next session registers its handler.
 
     if (this.ttlTimer) {
       clearTimeout(this.ttlTimer);

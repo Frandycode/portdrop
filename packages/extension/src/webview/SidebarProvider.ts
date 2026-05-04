@@ -41,6 +41,13 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     webviewView.webview.onDidReceiveMessage((msg: WebviewMessage) => {
       this._onWebviewMessage?.(msg);
     });
+
+    // Fire ready handler now, and again each time the panel becomes visible
+    // so SessionManager can re-push current state after a hide/show cycle.
+    this._onViewReady?.();
+    webviewView.onDidChangeVisibility(() => {
+      if (webviewView.visible) this._onViewReady?.();
+    });
   }
 
   // ── Extension → Webview ───────────────────────────────────────────────────
@@ -56,9 +63,14 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
   // ── Inbound message handler (set by SessionManager) ───────────────────────
 
   private _onWebviewMessage?: (msg: WebviewMessage) => void;
+  private _onViewReady?: () => void;
 
   onMessage(handler: (msg: WebviewMessage) => void): void {
     this._onWebviewMessage = handler;
+  }
+
+  onViewReady(handler: () => void): void {
+    this._onViewReady = handler;
   }
 
   // ── HTML shell ────────────────────────────────────────────────────────────
@@ -137,8 +149,11 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     /* Clock */
     .clock { text-align: center; }
     .clock .label { font-size: 10px; color: var(--pd-muted); }
-    .clock .value { font-size: 20px; font-weight: 700; font-family: monospace; color: var(--pd-cyan); }
-    .clock .value.warning { color: var(--pd-orange); }
+    .clock .value { font-size: 20px; font-weight: 700; font-family: monospace; color: #10b981; }
+    .clock .value.warn-amber { color: #eab308; }
+    .clock .value.warn-red   { color: #ef4444; animation: pd-blink 1s ease-in-out infinite; }
+    .clock .value.ended      { font-size: 13px; font-family: var(--vscode-font-family); letter-spacing: 0.5px; color: #ef4444; animation: none; }
+    @keyframes pd-blink { 0%,100%{opacity:0.6} 50%{opacity:1} }
 
     /* Scan badge */
     .scans { text-align: center; font-size: 11px; color: var(--pd-muted); }
@@ -347,18 +362,21 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     function tick() {
       if (!expiresAt) return;
       const remaining = expiresAt - Date.now();
+      const el    = document.getElementById('clock-value');
+      const label = document.querySelector('.clock .label');
       if (remaining <= 0) {
-        document.getElementById('clock-value').textContent = '00:00';
-        document.getElementById('clock-value').classList.add('warning');
+        label.textContent = '';
+        el.textContent    = 'Session ended';
+        el.className      = 'value ended';
         return;
       }
+      label.textContent = 'Expires in';
       const m = Math.floor(remaining / 60000);
       const s = Math.floor((remaining % 60000) / 1000);
-      const val = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
-      document.getElementById('clock-value').textContent = val;
-
-      // Warn when under 2 minutes
-      document.getElementById('clock-value').classList.toggle('warning', remaining < 120_000);
+      el.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+      el.className = remaining > 120000 ? 'value'
+        : remaining > 60000            ? 'value warn-amber'
+        :                                'value warn-red';
     }
 
     // ── Handle messages from extension ─────────────────────────────────────

@@ -34,8 +34,14 @@ export function TTLCountdown({ expiresAt }: TTLCountdownProps) {
   const s = Math.max(0, Math.floor((remaining % 60_000) / 1000));
   const clock = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 
+  const colorClass = remaining > 120_000
+    ? 'text-[#10b981]'
+    : remaining > 60_000
+    ? 'text-[#eab308]'
+    : 'text-[#ef4444] animate-pulse';
+
   return (
-    <span className={`font-mono text-sm ${expired ? 'text-portdrop-orange' : 'text-portdrop-cyan'}`}>
+    <span className={`font-mono text-sm ${expired ? 'text-[#ef4444]' : colorClass}`}>
       {expired ? 'Expired' : `Expires in ${clock}`}
     </span>
   );
