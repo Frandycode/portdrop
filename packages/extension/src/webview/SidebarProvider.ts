@@ -159,6 +159,17 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     .scans { text-align: center; font-size: 11px; color: var(--pd-muted); }
     .scans span { color: #fff; font-weight: 600; }
 
+    /* One-time badge */
+    .ots-badge {
+      display: flex; align-items: center; justify-content: center;
+      gap: 4px; font-size: 11px;
+      border: 1px dashed rgba(234,179,8,0.45); border-radius: 6px;
+      background: rgba(234,179,8,0.07); padding: 4px 10px;
+      color: #eab308;
+    }
+    .ots-row { display: flex; justify-content: center; }
+    .ots-row.hidden { display: none !important; }
+
     /* PIN badge */
     .pin-row { display: flex; align-items: center; justify-content: center; gap: 6px; }
     .pin-badge {
@@ -315,6 +326,9 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       <div id="clock-value" class="value">--:--</div>
     </div>
     <div class="scans">Scans: <span id="scan-count">0</span></div>
+    <div id="ots-row" class="ots-row hidden">
+      <div class="ots-badge">⚡ One-time link — burns after first open</div>
+    </div>
     <div id="pin-row" class="pin-row hidden">
       <div class="pin-badge">
         <span>PIN</span>
@@ -408,6 +422,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           document.getElementById('qr-url').textContent = data.publicUrl;
           document.getElementById('scan-count').textContent = '0';
           expiresAt = new Date(data.expiresAt).getTime();
+          document.getElementById('ots-row').classList.toggle('hidden', !data.oneTimeScan);
           if (data.pin) {
             document.getElementById('pin-val').textContent = data.pin;
             document.getElementById('pin-row').classList.remove('hidden');
@@ -423,6 +438,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         case 'SESSION_STOPPED':
           if (ticker) { clearInterval(ticker); ticker = null; }
           expiresAt = null;
+          document.getElementById('ots-row').classList.add('hidden');
           document.getElementById('pin-row').classList.add('hidden');
           showView('idle');
           break;
@@ -430,6 +446,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         case 'SESSION_EXPIRED':
           if (ticker) { clearInterval(ticker); ticker = null; }
           expiresAt = null;
+          document.getElementById('ots-row').classList.add('hidden');
           document.getElementById('pin-row').classList.add('hidden');
           showView('expired');
           break;

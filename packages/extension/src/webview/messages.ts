@@ -20,14 +20,15 @@ export type ExtensionMessage =
   | ScanReceivedMessage;
 
 export interface SessionStartedMessage {
-  type:       'SESSION_STARTED';
-  sessionId:  string;
-  publicUrl:  string;
-  qrDataUri:  string;
-  expiresAt:  string; // ISO string — Date is not serializable over postMessage
-  ttl:        string;
-  port:       number;
-  pin?:       string; // raw PIN shown to the developer; undefined = no PIN
+  type:         'SESSION_STARTED';
+  sessionId:    string;
+  publicUrl:    string;
+  qrDataUri:    string;
+  expiresAt:    string; // ISO string — Date is not serializable over postMessage
+  ttl:          string;
+  port:         number;
+  pin?:         string;   // raw PIN shown to the developer; undefined = no PIN
+  oneTimeScan?: boolean;  // true = link burns after first successful open
 }
 
 export interface SessionStoppedMessage {

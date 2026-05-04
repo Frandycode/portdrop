@@ -76,14 +76,15 @@ export class SessionManager {
     sidebar.onViewReady(() => {
       if (!this.state.active || !this.currentSessionId) return;
       sidebar.post({
-        type:      'SESSION_STARTED',
-        sessionId: this.currentSessionId,
-        publicUrl: this.state.publicUrl!,
-        qrDataUri: this.state.qrDataUri!,
-        expiresAt: this.state.expiresAt!.toISOString(),
-        ttl:       this.state.config!.ttl,
-        port:      this.state.config!.port,
-        pin:       this.state.pin,
+        type:        'SESSION_STARTED',
+        sessionId:   this.currentSessionId,
+        publicUrl:   this.state.publicUrl!,
+        qrDataUri:   this.state.qrDataUri!,
+        expiresAt:   this.state.expiresAt!.toISOString(),
+        ttl:         this.state.config!.ttl,
+        port:        this.state.config!.port,
+        pin:         this.state.pin,
+        oneTimeScan: this.state.config!.oneTimeScan,
       });
     });
   }
@@ -134,6 +135,17 @@ export class SessionManager {
     } else {
       ttl = ttlPick.ttl as TTLOption;
     }
+
+    // ── One-time scan ───────────────────────────────────────────────────────
+    const otsPick = await vscode.window.showQuickPick(
+      [
+        { label: '$(globe)    Multi-use link — anyone with the URL can open it', oneTimeScan: false },
+        { label: '$(flame)    One-time link — burns after the first open',       oneTimeScan: true  },
+      ],
+      { title: 'PortDrop — How many times can this link be opened?' },
+    );
+    if (!otsPick) return;
+    const oneTimeScan = otsPick.oneTimeScan;
 
     // ── Optional PIN ────────────────────────────────────────────────────────
     const pinPick = await vscode.window.showQuickPick(
@@ -195,7 +207,7 @@ export class SessionManager {
           port,
           ttl,
           customMs,
-          oneTimeScan:     false,
+          oneTimeScan,
           codeViewEnabled: false,
           pin,
         });
@@ -231,7 +243,7 @@ export class SessionManager {
           qrDataUri,
           startedAt: record.startedAt,
           expiresAt: record.expiresAt,
-          config:    { port, ttl, oneTimeScan: false, codeViewEnabled: false },
+          config:    { port, ttl, oneTimeScan, codeViewEnabled: false },
           pin,
         };
 
@@ -239,19 +251,21 @@ export class SessionManager {
 
         // ── Notify sidebar ─────────────────────────────────────────────────
         this.sidebar.post({
-          type:      'SESSION_STARTED',
-          sessionId: record.sessionId,
-          publicUrl: result.publicUrl,
+          type:        'SESSION_STARTED',
+          sessionId:   record.sessionId,
+          publicUrl:   result.publicUrl,
           qrDataUri,
-          expiresAt: record.expiresAt.toISOString(),
+          expiresAt:   record.expiresAt.toISOString(),
           ttl,
           port,
           pin,
+          oneTimeScan,
         });
 
-        const pinNotice = pin ? `  ·  PIN: ${pin}` : '';
+        const pinNotice = pin         ? `  ·  PIN: ${pin}` : '';
+        const otsNotice = oneTimeScan ? '  ·  ⚡ one-time link' : '';
         vscode.window.showInformationMessage(
-          `[PortDrop] Session live → ${result.publicUrl}${pinNotice}`,
+          `[PortDrop] Session live → ${result.publicUrl}${otsNotice}${pinNotice}`,
           'Copy URL',
           'Open Dashboard',
         ).then((action) => {
