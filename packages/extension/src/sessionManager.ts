@@ -53,7 +53,7 @@ export class SessionManager {
   private ttlTimer: NodeJS.Timeout | null     = null;
   private currentSessionId: string | null     = null;
   private expiryListener: ((id: string) => void) | null          = null;
-  private scanListener:   ((id: string, count: number) => void) | null = null;
+  private scanListener:   ((id: string, count: number, at: Date) => void) | null = null;
   private stoppingIntentionally = false;
 
   constructor(
@@ -228,9 +228,9 @@ export class SessionManager {
         sessionStore.on('expired', this.expiryListener);
 
         // Forward scan events to sidebar and status bar in real time
-        this.scanListener = (id: string, count: number) => {
+        this.scanListener = (id: string, count: number, at: Date) => {
           if (id !== record.sessionId) return;
-          this.sidebar.post({ type: 'SCAN_RECEIVED', scanCount: count });
+          this.sidebar.post({ type: 'SCAN_RECEIVED', scanCount: count, at: at.toISOString() });
           this.statusBar.setScanCount(count);
         };
         sessionStore.on('scanned', this.scanListener);

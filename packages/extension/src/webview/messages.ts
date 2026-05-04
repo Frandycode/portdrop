@@ -42,6 +42,7 @@ export interface SessionExpiredMessage {
 export interface ScanReceivedMessage {
   type:      'SCAN_RECEIVED';
   scanCount: number;
+  at:        string; // ISO timestamp of this scan
 }
 
 // ── Webview → Extension messages ──────────────────────────────────────────────

@@ -28,7 +28,7 @@ const TTL_MS: Record<TTLOption, number> = {
 export type StoreEvents = EventEmitter & {
   on(event: 'expired', listener: (sessionId: string) => void): StoreEvents;
   on(event: 'stopped', listener: (sessionId: string) => void): StoreEvents;
-  on(event: 'scanned', listener: (sessionId: string, count: number) => void): StoreEvents;
+  on(event: 'scanned', listener: (sessionId: string, count: number, at: Date) => void): StoreEvents;
 };
 
 // ── SessionStore ──────────────────────────────────────────────────────────────
@@ -151,7 +151,7 @@ export class SessionStore extends EventEmitter {
     }
 
     record.scanCount += 1;
-    this.emit('scanned', sessionId, record.scanCount);
+    this.emit('scanned', sessionId, record.scanCount, new Date());
     console.log(`[PortDrop:Store] Session accessed: ${sessionId} (scans: ${record.scanCount})`);
 
     return this.toPublic(record);

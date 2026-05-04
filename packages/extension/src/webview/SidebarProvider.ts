@@ -184,6 +184,26 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     }
     .pin-row.hidden { display: none !important; }
 
+    /* Access log */
+    .log-section { border-top: 1px solid var(--pd-border); padding-top: 8px; }
+    .log-header {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 11px; color: var(--pd-muted); cursor: pointer; user-select: none;
+      padding: 2px 0;
+    }
+    .log-header:hover { color: #fff; }
+    .log-chevron { font-size: 9px; transition: transform 0.15s; }
+    .log-chevron.open { transform: rotate(90deg); }
+    .log-list { margin-top: 6px; display: flex; flex-direction: column; gap: 3px; }
+    .log-list.hidden { display: none; }
+    .log-entry {
+      display: flex; align-items: baseline; gap: 6px;
+      font-size: 10px; color: var(--pd-muted);
+    }
+    .log-entry .log-n { color: #D4A853; font-family: monospace; min-width: 18px; }
+    .log-entry .log-time { color: #94a3b8; }
+    .log-empty { font-size: 10px; color: var(--pd-muted); font-style: italic; text-align: center; padding: 4px 0; }
+
     /* Actions */
     .actions { display: flex; flex-direction: column; gap: 6px; }
     button {
@@ -335,6 +355,16 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         <span id="pin-val" class="pin-val">----</span>
       </div>
     </div>
+    <div class="log-section">
+      <div class="log-header" id="log-toggle">
+        <span>Access log</span>
+        <span class="log-chevron" id="log-chevron">›</span>
+      </div>
+      <div class="log-list hidden" id="log-list">
+        <div class="log-empty" id="log-empty">No scans yet.</div>
+      </div>
+    </div>
+
     <div class="actions">
       <button class="primary" id="btn-copy">Copy URL</button>
       <button id="btn-dashboard">Open in Browser</button>
@@ -351,6 +381,31 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     const vscode = acquireVsCodeApi();
     let expiresAt = null;
     let ticker    = null;
+    let logOpen   = false;
+
+    // ── Access log toggle ──────────────────────────────────────────────────
+    document.getElementById('log-toggle').addEventListener('click', () => {
+      logOpen = !logOpen;
+      document.getElementById('log-list').classList.toggle('hidden', !logOpen);
+      document.getElementById('log-chevron').classList.toggle('open', logOpen);
+    });
+
+    function resetLog() {
+      const list = document.getElementById('log-list');
+      list.innerHTML = '<div class="log-empty" id="log-empty">No scans yet.</div>';
+    }
+
+    function appendLogEntry(count, at) {
+      const list = document.getElementById('log-list');
+      const empty = document.getElementById('log-empty');
+      if (empty) empty.remove();
+      const d = new Date(at);
+      const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = '<span class="log-n">#' + count + '</span><span class="log-time">' + time + '</span>';
+      list.appendChild(entry);
+    }
 
     // ── Send message to extension ──────────────────────────────────────────
     function send(type) {
@@ -421,6 +476,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           document.getElementById('qr-img').src = data.qrDataUri;
           document.getElementById('qr-url').textContent = data.publicUrl;
           document.getElementById('scan-count').textContent = '0';
+          resetLog();
           expiresAt = new Date(data.expiresAt).getTime();
           document.getElementById('ots-row').classList.toggle('hidden', !data.oneTimeScan);
           if (data.pin) {
@@ -440,6 +496,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           expiresAt = null;
           document.getElementById('ots-row').classList.add('hidden');
           document.getElementById('pin-row').classList.add('hidden');
+          resetLog();
           showView('idle');
           break;
 
@@ -453,6 +510,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
         case 'SCAN_RECEIVED':
           document.getElementById('scan-count').textContent = String(data.scanCount);
+          appendLogEntry(data.scanCount, data.at);
           break;
       }
     });
