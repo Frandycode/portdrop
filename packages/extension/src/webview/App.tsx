@@ -11,11 +11,102 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useReducer } from 'react';
+import { ExtensionMessage, SessionStartedMessage, ScanReceivedMessage } from './messages';
+import { vscode } from './vscode-api';
+import { QRPanel }      from './components/QRPanel';
+import { TTLClock }     from './components/TTLClock';
+import { SessionConfig } from './components/SessionConfig';
+import { AccessLog }    from './components/AccessLog';
 
-// ── View status ───────────────────────────────────────────────────────────────
+// ── Domain types (consumed by child components in later steps) ────────────────
 
-type AppStatus = 'loading' | 'idle' | 'active' | 'expired';
+export interface ScanEntry {
+  n:  number;
+  at: string; // ISO timestamp
+}
+
+export interface ActiveSession {
+  sessionId:    string;
+  publicUrl:    string;
+  qrDataUri:    string;
+  expiresAt:    Date;
+  ttl:          string;
+  port:         number;
+  pin?:         string;
+  oneTimeScan?: boolean;
+  scanCount:    number;
+  scanLog:      ScanEntry[];
+}
+
+// ── State machine ─────────────────────────────────────────────────────────────
+
+type AppState =
+  | { status: 'loading' }
+  | { status: 'idle' }
+  | { status: 'active'; session: ActiveSession }
+  | { status: 'expired' };
+
+type Action =
+  | { type: 'LOADED_IDLE' }
+  | { type: 'SESSION_STARTED'; msg: SessionStartedMessage }
+  | { type: 'SESSION_STOPPED' }
+  | { type: 'SESSION_EXPIRED' }
+  | { type: 'SCAN_RECEIVED';   msg: ScanReceivedMessage };
+
+function reducer(state: AppState, action: Action): AppState {
+  switch (action.type) {
+    case 'LOADED_IDLE':
+      return state.status === 'loading' ? { status: 'idle' } : state;
+
+    case 'SESSION_STARTED': {
+      const { msg } = action;
+      return {
+        status: 'active',
+        session: {
+          sessionId:    msg.sessionId,
+          publicUrl:    msg.publicUrl,
+          qrDataUri:    msg.qrDataUri,
+          expiresAt:    new Date(msg.expiresAt),
+          ttl:          msg.ttl,
+          port:         msg.port,
+          pin:          msg.pin,
+          oneTimeScan:  msg.oneTimeScan,
+          scanCount:    0,
+          scanLog:      [],
+        },
+      };
+    }
+
+    case 'SESSION_STOPPED':
+      return { status: 'idle' };
+
+    case 'SESSION_EXPIRED':
+      return { status: 'expired' };
+
+    case 'SCAN_RECEIVED': {
+      if (state.status !== 'active') return state;
+      const { msg } = action;
+      return {
+        ...state,
+        session: {
+          ...state.session,
+          scanCount: msg.scanCount,
+          scanLog:   [...state.session.scanLog, { n: msg.scanCount, at: msg.at }],
+        },
+      };
+    }
+
+    default:
+      return state;
+  }
+}
+
+// ── Outbound helper ───────────────────────────────────────────────────────────
+
+function send(type: 'REQUEST_STOP' | 'REQUEST_COPY_URL' | 'REQUEST_OPEN_DASHBOARD') {
+  vscode.postMessage({ type });
+}
 
 // ── Sub-views ─────────────────────────────────────────────────────────────────
 
@@ -47,14 +138,8 @@ function IdleView() {
               <rect x="23" y="23" width="74" height="74" fill="url(#sb-dot-fade)" />
             </mask>
           </defs>
-
-          {/* Outer ring */}
           <circle cx="60" cy="60" r="56" stroke="#C48540" strokeWidth="2" />
-
-          {/* Inner ring */}
           <circle cx="60" cy="60" r="44" fill="rgba(14,31,58,0.96)" stroke="#C48540" strokeWidth="1.4" />
-
-          {/* Dot field */}
           <g clipPath="url(#sb-inner-clip)" mask="url(#sb-dot-mask)">
             <circle cx="40" cy="97"  r="1.6" fill="#C48540" opacity="0.85" />
             <circle cx="48" cy="99"  r="1.7" fill="#D4A853" opacity="0.85" />
@@ -97,8 +182,6 @@ function IdleView() {
             <circle cx="84" cy="63"  r="1.0" fill="#C48540" opacity="0.25" />
             <circle cx="90" cy="63"  r="1.0" fill="#D4A853" opacity="0.22" />
           </g>
-
-          {/* Plug */}
           <rect x="48" y="32" width="24" height="18" rx="3"
             fill="#D4A853" fillOpacity="0.13" stroke="#D4A853" strokeWidth="1.4" />
           <line x1="54" y1="50" x2="54" y2="60" stroke="#D4A853" strokeWidth="1.8" strokeLinecap="round" />
@@ -109,8 +192,6 @@ function IdleView() {
             fill="rgba(196,133,58,0.08)" stroke="#C48540" strokeWidth="1.4" />
           <rect x="50" y="71" width="9" height="12" rx="2" fill="#C48540" opacity="0.92" />
           <rect x="61" y="71" width="9" height="12" rx="2" fill="#C48540" opacity="0.92" />
-
-          {/* Cardinal rivets */}
           <circle cx="60"  cy="4"   r="2.5" fill="#C48540" opacity="0.70" />
           <circle cx="116" cy="60"  r="2.5" fill="#C48540" opacity="0.70" />
           <circle cx="60"  cy="116" r="2.5" fill="#C48540" opacity="0.70" />
@@ -124,23 +205,75 @@ function IdleView() {
   );
 }
 
+function ActiveView({ session }: { session: ActiveSession }) {
+  return (
+    <div className="pd-active">
+      <QRPanel dataUri={session.qrDataUri} url={session.publicUrl} />
+      <TTLClock expiresAt={session.expiresAt} />
+      <SessionConfig />
+      <AccessLog />
+      <div className="pd-actions">
+        <button className="pd-btn primary" onClick={() => send('REQUEST_COPY_URL')}>
+          Copy URL
+        </button>
+        <button className="pd-btn" onClick={() => send('REQUEST_OPEN_DASHBOARD')}>
+          Open in Browser
+        </button>
+        <button className="pd-btn danger" onClick={() => send('REQUEST_STOP')}>
+          Stop Session
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ExpiredView() {
+  return (
+    <div className="pd-expired">
+      <p>&#x23F1; Session expired.</p>
+    </div>
+  );
+}
+
 // ── Root ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [status, setStatus] = useState<AppStatus>('loading');
+  const [state, dispatch] = useReducer(reducer, { status: 'loading' });
 
   useEffect(() => {
-    // If the extension sends no message (no active session), fall through to idle.
-    const timer = setTimeout(
-      () => setStatus(s => (s === 'loading' ? 'idle' : s)),
-      400,
-    );
-    return () => clearTimeout(timer);
+    // Fall through to idle if no session message arrives within 400ms.
+    const timer = setTimeout(() => dispatch({ type: 'LOADED_IDLE' }), 400);
+
+    const handler = (event: MessageEvent<ExtensionMessage>) => {
+      const msg = event.data;
+      switch (msg.type) {
+        case 'SESSION_STARTED':
+          clearTimeout(timer);
+          dispatch({ type: 'SESSION_STARTED', msg });
+          break;
+        case 'SESSION_STOPPED':
+          dispatch({ type: 'SESSION_STOPPED' });
+          break;
+        case 'SESSION_EXPIRED':
+          dispatch({ type: 'SESSION_EXPIRED' });
+          break;
+        case 'SCAN_RECEIVED':
+          dispatch({ type: 'SCAN_RECEIVED', msg });
+          break;
+      }
+    };
+
+    window.addEventListener('message', handler);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('message', handler);
+    };
   }, []);
 
-  if (status === 'loading') return <Skeleton />;
-  if (status === 'idle')    return <IdleView />;
-
-  // active / expired handled in Step 9
-  return null;
+  switch (state.status) {
+    case 'loading': return <Skeleton />;
+    case 'idle':    return <IdleView />;
+    case 'active':  return <ActiveView session={state.session} />;
+    case 'expired': return <ExpiredView />;
+  }
 }
