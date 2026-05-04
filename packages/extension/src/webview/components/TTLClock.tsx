@@ -17,24 +17,36 @@ interface TTLClockProps {
   expiresAt: Date;
 }
 
+function warningClass(ms: number): string {
+  if (ms <= 0)       return 'ended';
+  if (ms <= 60_000)  return 'warn-red';
+  if (ms <= 120_000) return 'warn-amber';
+  return '';
+}
+
 export function TTLClock({ expiresAt }: TTLClockProps) {
-  const [remaining, setRemaining] = useState(expiresAt.getTime() - Date.now());
+  const [remaining, setRemaining] = useState(() => expiresAt.getTime() - Date.now());
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setRemaining(expiresAt.getTime() - Date.now());
+    if (remaining <= 0) return;
+    const id = setInterval(() => {
+      const r = expiresAt.getTime() - Date.now();
+      setRemaining(r);
+      if (r <= 0) clearInterval(id);
     }, 1000);
-    return () => clearInterval(interval);
+    return () => clearInterval(id);
   }, [expiresAt]);
 
-  const m = Math.max(0, Math.floor(remaining / 60_000));
-  const s = Math.max(0, Math.floor((remaining % 60_000) / 1000));
-  const clock = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  const ended = remaining <= 0;
+  const m     = Math.floor(Math.max(0, remaining) / 60_000);
+  const s     = Math.floor((Math.max(0, remaining) % 60_000) / 1000);
+  const label = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  const cls   = `pd-clock-value${warningClass(remaining) ? ' ' + warningClass(remaining) : ''}`;
 
   return (
-    <section className="ttl-clock">
-      <span className="ttl-label">Expires in</span>
-      <span className="ttl-value">{clock}</span>
-    </section>
+    <div className="pd-clock">
+      {!ended && <div className="pd-clock-label">Expires in</div>}
+      <span className={cls}>{ended ? 'Session ended' : label}</span>
+    </div>
   );
 }
