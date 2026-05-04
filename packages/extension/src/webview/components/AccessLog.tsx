@@ -7,18 +7,44 @@
  * GitHub   : https://github.com/frandycode
  * Email    : frandyslueue@gmail.com
  * Location : Tulsa, OK & Dallas, TX (Central Time)
- * Project  : PortDrop — dev-only access log panel (scan times, viewer info)
+ * Project  : PortDrop — collapsible scan access log in the sidebar webview
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-// TODO (Phase 1): receive viewer scan events via postMessage and render a
-// timestamped list of scans, user-agents, and tab visits. Never visible
-// to the viewer — extension host only passes this to the sidebar webview.
+import { useState } from 'react';
+import { ScanEntry } from '../App';
 
-export function AccessLog() {
+interface AccessLogProps {
+  scanLog: ScanEntry[];
+}
+
+export function AccessLog({ scanLog }: AccessLogProps) {
+  const [open, setOpen] = useState(false);
+
   return (
-    <section className="access-log">
-      <p>Access log — Phase 1</p>
-    </section>
+    <div className="pd-log">
+      <div className="pd-log-header" onClick={() => setOpen(o => !o)}>
+        <span>Access log</span>
+        <span className={`pd-log-chevron${open ? ' open' : ''}`}>&#x203A;</span>
+      </div>
+      {open && (
+        <div className="pd-log-entries">
+          {scanLog.length === 0 ? (
+            <div className="pd-log-empty">No scans yet.</div>
+          ) : (
+            scanLog.map(entry => (
+              <div key={entry.n} className="pd-log-entry">
+                <span className="pd-log-n">#{entry.n}</span>
+                <span className="pd-log-time">
+                  {new Date(entry.at).toLocaleTimeString([], {
+                    hour: '2-digit', minute: '2-digit', second: '2-digit',
+                  })}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
   );
 }

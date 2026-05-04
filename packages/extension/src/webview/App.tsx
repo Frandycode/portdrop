@@ -213,7 +213,7 @@ function ActiveView({ session }: { session: ActiveSession }) {
         pin={session.pin}
         oneTimeScan={session.oneTimeScan}
       />
-      <AccessLog />
+      <AccessLog scanLog={session.scanLog} />
 
       <div className="pd-actions">
         <button className="pd-btn primary" onClick={() => send('REQUEST_COPY_URL')}>
