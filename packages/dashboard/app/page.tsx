@@ -2,16 +2,16 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * Author   : Frandy Slueue
  * Alias    : CodeBreeder
- * Project  : PortDrop — Landing page
+ * Title    : Software Engineering · DevOps Security · IT Ops
+ * Portfolio: https://frandycode.dev
+ * GitHub   : https://github.com/frandycode
+ * Email    : frandyslueue@gmail.com
+ * Location : Tulsa, OK & Dallas, TX (Central Time)
+ * Project  : PortDrop - Landing page
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'PortDrop — You control the window.',
-  description: 'Share your running local app via QR code. You control the window. You control the clock.',
-};
+'use client';
 
 export default function HomePage() {
   return (
@@ -59,7 +59,7 @@ export default function HomePage() {
             <a href="#docs">Docs</a>
             <a href="#changelog">Changelog</a>
           </div>
-          <button className="pd-nav-cta">Install →</button>
+          <button className="pd-nav-cta" onClick={() => window.open('https://marketplace.visualstudio.com/items?itemName=codebreeder.portdrop','_blank')}>Install →</button>
         </nav>
 
         {/* HERO */}
@@ -84,11 +84,11 @@ export default function HomePage() {
               <em> localhost:</em> tabs or hunting through terminal scrollback.
             </p>
             <div className="pd-cta-row">
-              <button className="pd-btn-primary">
+              <button className="pd-btn-primary" onClick={() => window.open('https://marketplace.visualstudio.com/items?itemName=codebreeder.portdrop','_blank')}>
                 Get the Extension
                 <span style={{fontSize:'16px',lineHeight:'1'}}>→</span>
               </button>
-              <button className="pd-btn-secondary">View on GitHub</button>
+              <button className="pd-btn-secondary" onClick={() => window.open('https://github.com/Frandycode/portdrop','_blank')}>View on GitHub</button>
             </div>
             <div className="pd-tag-strip">
               <span className="pd-tag"><span className="pd-tag-dot"/>Free &amp; Open Source</span>

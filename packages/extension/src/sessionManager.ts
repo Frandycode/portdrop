@@ -50,6 +50,9 @@ export class SessionManager {
   private tunnelProcess: ChildProcess | null  = null;
   private ttlTimer: NodeJS.Timeout | null     = null;
   private currentSessionId: string | null     = null;
+  private expiryListener: ((id: string) => void) | null          = null;
+  private scanListener:   ((id: string, count: number) => void) | null = null;
+  private stoppingIntentionally = false;
 
   constructor(
     private readonly context: vscode.ExtensionContext,
@@ -132,8 +135,9 @@ export class SessionManager {
 
         this.tunnelProcess = result.process;
 
-        // Handle unexpected tunnel drop
+        // Handle unexpected tunnel drop — ignore close events triggered by our own stop()
         result.events.on('close', (code) => {
+          if (this.stoppingIntentionally) return;
           vscode.window.showWarningMessage(
             `[PortDrop] Tunnel closed unexpectedly (code ${code}). Session ended.`,
           );
@@ -146,6 +150,7 @@ export class SessionManager {
           qrDataUri:       '',
           port,
           ttl,
+          customMs,
           oneTimeScan:     false,
           codeViewEnabled: false,
         });
@@ -155,20 +160,23 @@ export class SessionManager {
         const qrDataUri  = await generateQRDataUri(result.publicUrl);
         record.qrDataUri = qrDataUri;
         // React to store-driven expiry (TTL reached or one-time-scan burned)
-        sessionStore.once('expired', (id: string) => {
-          if (id === record.sessionId) {
-            this.sidebar.post({ type: 'SESSION_EXPIRED' });
-            vscode.window.showInformationMessage('[PortDrop] Session TTL reached. Tunnel closed.');
-            this.stop();
-          }
-        });
+        this.expiryListener = (id: string) => {
+          if (id !== record.sessionId) return;
+          sessionStore.off('expired', this.expiryListener!);
+          this.expiryListener = null;
+          this.sidebar.post({ type: 'SESSION_EXPIRED' });
+          vscode.window.showInformationMessage('[PortDrop] Session TTL reached. Tunnel closed.');
+          this.stop();
+        };
+        sessionStore.on('expired', this.expiryListener);
 
-        // Forward scan events to sidebar in real time
-        sessionStore.on('scanned', (id: string, count: number) => {
-          if (id === record.sessionId) {
-            this.sidebar.post({ type: 'SCAN_RECEIVED', scanCount: count });
-          }
-        });
+        // Forward scan events to sidebar and status bar in real time
+        this.scanListener = (id: string, count: number) => {
+          if (id !== record.sessionId) return;
+          this.sidebar.post({ type: 'SCAN_RECEIVED', scanCount: count });
+          this.statusBar.setScanCount(count);
+        };
+        sessionStore.on('scanned', this.scanListener);
 
         this.currentSessionId = record.sessionId;
 
@@ -211,14 +219,26 @@ export class SessionManager {
   async stop(): Promise<void> {
     if (!this.state.active && !this.tunnelProcess) return;
 
+    this.stoppingIntentionally = true;
     if (this.tunnelProcess) {
       stopTunnel(this.tunnelProcess);
       this.tunnelProcess = null;
     }
+    this.stoppingIntentionally = false;
 
     if (this.ttlTimer) {
       clearTimeout(this.ttlTimer);
       this.ttlTimer = null;
+    }
+
+    if (this.expiryListener) {
+      sessionStore.off('expired', this.expiryListener);
+      this.expiryListener = null;
+    }
+
+    if (this.scanListener) {
+      sessionStore.off('scanned', this.scanListener);
+      this.scanListener = null;
     }
 
     if (this.currentSessionId) {

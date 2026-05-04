@@ -16,6 +16,9 @@ import * as vscode from 'vscode';
 export class StatusBarManager implements vscode.Disposable {
   private readonly item: vscode.StatusBarItem;
   private tickInterval: NodeJS.Timeout | null = null;
+  private activeExpiresAt: Date | null = null;
+  private activeUrl: string | null = null;
+  private scanCount = 0;
 
   constructor() {
     this.item = vscode.window.createStatusBarItem(
@@ -28,6 +31,9 @@ export class StatusBarManager implements vscode.Disposable {
 
   setIdle(): void {
     this.stopTick();
+    this.activeExpiresAt = null;
+    this.activeUrl       = null;
+    this.scanCount       = 0;
     this.item.text        = '$(broadcast) PortDrop';
     this.item.tooltip     = 'PortDrop — click to start a session';
     this.item.command     = 'portdrop.start';
@@ -36,9 +42,17 @@ export class StatusBarManager implements vscode.Disposable {
   }
 
   setActive(expiresAt: Date, url: string): void {
+    this.activeExpiresAt = expiresAt;
+    this.activeUrl       = url;
+    this.scanCount       = 0;
     this.stopTick();
-    this.tickInterval = setInterval(() => this.tick(expiresAt, url), 1000);
-    this.tick(expiresAt, url);
+    this.tickInterval = setInterval(() => this.tick(), 1000);
+    this.tick();
+  }
+
+  setScanCount(count: number): void {
+    this.scanCount = count;
+    this.tick();
   }
 
   setExpired(): void {
@@ -49,18 +63,20 @@ export class StatusBarManager implements vscode.Disposable {
     this.item.backgroundColor  = new vscode.ThemeColor('statusBarItem.warningBackground');
   }
 
-  private tick(expiresAt: Date, url: string): void {
-    const remaining = expiresAt.getTime() - Date.now();
+  private tick(): void {
+    if (!this.activeExpiresAt || !this.activeUrl) return;
+    const remaining = this.activeExpiresAt.getTime() - Date.now();
     if (remaining <= 0) {
       this.setExpired();
       return;
     }
     const m = Math.floor(remaining / 60_000);
     const s = Math.floor((remaining % 60_000) / 1000);
-    const clock = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    const clock     = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    const scanBadge = this.scanCount > 0 ? ` | ↓ ${this.scanCount}` : '';
 
-    this.item.text    = `$(broadcast) PortDrop | ${clock}`;
-    this.item.tooltip = `Active session: ${url}\nClick to open dashboard`;
+    this.item.text    = `$(broadcast) PortDrop | ${clock}${scanBadge}`;
+    this.item.tooltip = `Active session: ${this.activeUrl}\nClick to open dashboard`;
     this.item.command = 'portdrop.openDashboard';
   }
 

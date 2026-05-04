@@ -1,9 +1,50 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-  <circle cx="12" cy="12" r="10.5" stroke="#C48540" stroke-width="1.5"/>
-  <rect x="8.5" y="4.5" width="7" height="5" rx="1" stroke="#C48540" stroke-width="1.2"/>
-  <line x1="10.2" y1="9.5" x2="10.2" y2="12.2" stroke="#C48540" stroke-width="1.3" stroke-linecap="round"/>
-  <line x1="13.8" y1="9.5" x2="13.8" y2="12.2" stroke="#C48540" stroke-width="1.3" stroke-linecap="round"/>
-  <rect x="7.5" y="13" width="9" height="5.5" rx="1.2" stroke="#C48540" stroke-width="1.2"/>
-  <rect x="9" y="14.2" width="2.4" height="3" rx="0.5" fill="#C48540"/>
-  <rect x="12.6" y="14.2" width="2.4" height="3" rx="0.5" fill="#C48540"/>
+  <defs>
+    <clipPath id="ic"><circle cx="12" cy="12" r="7.2"/></clipPath>
+  </defs>
+
+  <!-- outer ring -->
+  <circle cx="12" cy="12" r="11" stroke="#C48540" stroke-width="1.2" fill="none"/>
+
+  <!-- inner ring -->
+  <circle cx="12" cy="12" r="7.8" stroke="#C48540" stroke-width="0.9"
+          fill="rgba(13,30,56,0.95)"/>
+
+  <!-- dot fill clipped to inner ring, fading upward -->
+  <g clip-path="url(#ic)">
+    <circle cx="9.2"  cy="18.4" r="0.85" fill="#C48540" opacity="0.80"/>
+    <circle cx="12"   cy="18.8" r="0.85" fill="#D4A853" opacity="0.80"/>
+    <circle cx="14.8" cy="18.4" r="0.85" fill="#C48540" opacity="0.80"/>
+    <circle cx="8.2"  cy="16.6" r="0.70" fill="#C48540" opacity="0.55"/>
+    <circle cx="10.6" cy="17.0" r="0.72" fill="#D4A853" opacity="0.60"/>
+    <circle cx="12"   cy="17.2" r="0.72" fill="#C48540" opacity="0.55"/>
+    <circle cx="13.4" cy="17.0" r="0.72" fill="#D4A853" opacity="0.60"/>
+    <circle cx="15.8" cy="16.6" r="0.70" fill="#C48540" opacity="0.55"/>
+    <circle cx="8.8"  cy="15.0" r="0.55" fill="#C48540" opacity="0.35"/>
+    <circle cx="11.0" cy="15.3" r="0.58" fill="#D4A853" opacity="0.38"/>
+    <circle cx="13.0" cy="15.3" r="0.58" fill="#C48540" opacity="0.35"/>
+    <circle cx="15.2" cy="15.0" r="0.55" fill="#D4A853" opacity="0.35"/>
+    <circle cx="9.5"  cy="13.6" r="0.45" fill="#C48540" opacity="0.18"/>
+    <circle cx="14.5" cy="13.6" r="0.45" fill="#D4A853" opacity="0.18"/>
+  </g>
+
+  <!-- PLUG -->
+  <rect x="8.8" y="5.8" width="6.4" height="4.2" rx="0.7"
+        fill="#D4A853" fill-opacity="0.14" stroke="#D4A853" stroke-width="0.7"/>
+  <line x1="10.4" y1="10.0" x2="10.4" y2="12.1"
+        stroke="#D4A853" stroke-width="0.95" stroke-linecap="round"/>
+  <line x1="13.6" y1="10.0" x2="13.6" y2="12.1"
+        stroke="#D4A853" stroke-width="0.95" stroke-linecap="round"/>
+  <line x1="12" y1="12.1" x2="12" y2="13.2"
+        stroke="#C48540" stroke-width="0.65" stroke-dasharray="0.9,0.9" opacity="0.85"/>
+  <rect x="8.2" y="13.2" width="7.6" height="5.0" rx="0.8"
+        fill="rgba(196,133,58,0.09)" stroke="#C48540" stroke-width="0.7"/>
+  <rect x="9.2"  y="14.1" width="2.3" height="3.2" rx="0.4" fill="#C48540" opacity="0.92"/>
+  <rect x="12.5" y="14.1" width="2.3" height="3.2" rx="0.4" fill="#C48540" opacity="0.92"/>
+
+  <!-- rivet dots on outer ring -->
+  <circle cx="12"   cy="1.0"  r="0.8" fill="#C48540" opacity="0.65"/>
+  <circle cx="23.0" cy="12"   r="0.8" fill="#C48540" opacity="0.65"/>
+  <circle cx="12"   cy="23.0" r="0.8" fill="#C48540" opacity="0.65"/>
+  <circle cx="1.0"  cy="12"   r="0.8" fill="#C48540" opacity="0.65"/>
 </svg>

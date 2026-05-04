@@ -22,6 +22,7 @@
       ]
     },
     "allowJs": true,
+    "allowArbitraryExtensions": true,
     "noEmit": true
   },
   "include": [
