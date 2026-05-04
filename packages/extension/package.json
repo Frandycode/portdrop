@@ -128,7 +128,9 @@
     }
   },
   "scripts": {
-    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --platform=node --format=cjs",
+    "build:webview": "vite build --config vite.webview.config.ts",
+    "build:ext": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --platform=node --format=cjs",
+    "build": "pnpm build:webview && pnpm build:ext",
     "watch": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --platform=node --format=cjs --watch",
     "package": "bash ../../scripts/package-extension.sh",
     "lint": "eslint src --ext ts",
