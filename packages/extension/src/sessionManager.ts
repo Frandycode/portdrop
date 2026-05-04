@@ -317,6 +317,7 @@ export class SessionManager {
       startedAt: null,
       expiresAt: null,
       config: null,
+      pin: undefined,
     };
 
     this.statusBar.setIdle();

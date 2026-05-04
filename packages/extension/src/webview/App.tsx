@@ -11,7 +11,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { useEffect, useReducer } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import { ExtensionMessage, SessionStartedMessage, ScanReceivedMessage } from './messages';
 import { vscode } from './vscode-api';
 import { QRPanel }       from './components/QRPanel';
@@ -106,6 +106,36 @@ function reducer(state: AppState, action: Action): AppState {
 
 function send(type: 'REQUEST_STOP' | 'REQUEST_COPY_URL' | 'REQUEST_OPEN_DASHBOARD') {
   vscode.postMessage({ type });
+}
+
+// ── Flash button ─────────────────────────────────────────────────────────────
+
+function FlashButton({
+  className,
+  label,
+  flashLabel,
+  duration = 1500,
+  onClick,
+}: {
+  className?:  string;
+  label:       string;
+  flashLabel:  string;
+  duration?:   number;
+  onClick:     () => void;
+}) {
+  const [flashing, setFlashing] = useState(false);
+
+  const handleClick = () => {
+    onClick();
+    setFlashing(true);
+    setTimeout(() => setFlashing(false), duration);
+  };
+
+  return (
+    <button className={className} onClick={handleClick} disabled={flashing}>
+      {flashing ? flashLabel : label}
+    </button>
+  );
 }
 
 // ── Sub-views ─────────────────────────────────────────────────────────────────
@@ -216,15 +246,27 @@ function ActiveView({ session }: { session: ActiveSession }) {
       <AccessLog scanLog={session.scanLog} />
 
       <div className="pd-actions">
-        <button className="pd-btn primary" onClick={() => send('REQUEST_COPY_URL')}>
-          Copy URL
-        </button>
-        <button className="pd-btn" onClick={() => send('REQUEST_OPEN_DASHBOARD')}>
-          Open in Browser
-        </button>
-        <button className="pd-btn danger" onClick={() => send('REQUEST_STOP')}>
-          Stop Session
-        </button>
+        <FlashButton
+          className="pd-btn primary"
+          label="Copy URL"
+          flashLabel="&#x2713; Copied!"
+          duration={1500}
+          onClick={() => send('REQUEST_COPY_URL')}
+        />
+        <FlashButton
+          className="pd-btn"
+          label="Open in Browser"
+          flashLabel="&#x2197; Opening..."
+          duration={1000}
+          onClick={() => send('REQUEST_OPEN_DASHBOARD')}
+        />
+        <FlashButton
+          className="pd-btn danger"
+          label="Stop Session"
+          flashLabel="&#x23F9; Stopping..."
+          duration={2000}
+          onClick={() => send('REQUEST_STOP')}
+        />
       </div>
     </div>
   );
