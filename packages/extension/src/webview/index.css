@@ -20,6 +20,37 @@ body {
   min-height: 100vh;
 }
 
+/* ── Skeleton loading ── */
+@keyframes pd-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+.pd-skeleton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 32px 16px;
+}
+
+.pd-skel-block {
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--pd-surface) 25%,
+    #1a2744 50%,
+    var(--pd-surface) 75%
+  );
+  background-size: 800px 100%;
+  animation: pd-shimmer 1.6s ease-in-out infinite;
+}
+
+.pd-skel-logo  { width: 80px;  height: 80px;  border-radius: 50%; }
+.pd-skel-title { width: 90px;  height: 12px; margin-top: 4px; }
+.pd-skel-text  { width: 140px; height: 10px; }
+.pd-skel-text.short { width: 100px; }
+
 /* ── Idle ── */
 .pd-idle {
   display: flex;
