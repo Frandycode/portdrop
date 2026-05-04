@@ -207,7 +207,12 @@ function ActiveView({ session }: { session: ActiveSession }) {
         </div>
       )}
 
-      <SessionConfig />
+      <SessionConfig
+        port={session.port}
+        ttl={session.ttl}
+        pin={session.pin}
+        oneTimeScan={session.oneTimeScan}
+      />
       <AccessLog />
 
       <div className="pd-actions">
