@@ -29,12 +29,13 @@ export interface SessionConfig {
 }
 
 export interface SessionState {
-  active: boolean;          
+  active: boolean;
   publicUrl: string | null;
   qrDataUri: string | null;
   startedAt: Date | null;
   expiresAt: Date | null;
   config: SessionConfig | null;
+  pin: string | undefined;
 }
 
 export class SessionManager {
@@ -45,6 +46,7 @@ export class SessionManager {
     startedAt: null,
     expiresAt: null,
     config: null,
+    pin: undefined,
   };
 
   private tunnelProcess: ChildProcess | null  = null;
@@ -81,6 +83,7 @@ export class SessionManager {
         expiresAt: this.state.expiresAt!.toISOString(),
         ttl:       this.state.config!.ttl,
         port:      this.state.config!.port,
+        pin:       this.state.pin,
       });
     });
   }
@@ -229,6 +232,7 @@ export class SessionManager {
           startedAt: record.startedAt,
           expiresAt: record.expiresAt,
           config:    { port, ttl, oneTimeScan: false, codeViewEnabled: false },
+          pin,
         };
 
         this.statusBar.setActive(record.expiresAt, result.publicUrl);

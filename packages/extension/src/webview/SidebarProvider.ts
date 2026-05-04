@@ -159,6 +159,20 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     .scans { text-align: center; font-size: 11px; color: var(--pd-muted); }
     .scans span { color: #fff; font-weight: 600; }
 
+    /* PIN badge */
+    .pin-row { display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .pin-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      border: 1px dashed rgba(196,133,58,0.45); border-radius: 6px;
+      background: rgba(196,133,58,0.07); padding: 4px 10px;
+      font-size: 11px; color: var(--pd-muted);
+    }
+    .pin-badge .pin-val {
+      font-family: monospace; font-size: 15px; font-weight: 700;
+      letter-spacing: 3px; color: #D4A853;
+    }
+    .pin-row.hidden { display: none !important; }
+
     /* Actions */
     .actions { display: flex; flex-direction: column; gap: 6px; }
     button {
@@ -301,6 +315,12 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       <div id="clock-value" class="value">--:--</div>
     </div>
     <div class="scans">Scans: <span id="scan-count">0</span></div>
+    <div id="pin-row" class="pin-row hidden">
+      <div class="pin-badge">
+        <span>PIN</span>
+        <span id="pin-val" class="pin-val">----</span>
+      </div>
+    </div>
     <div class="actions">
       <button class="primary" id="btn-copy">Copy URL</button>
       <button id="btn-dashboard">Open in Browser</button>
@@ -388,6 +408,12 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           document.getElementById('qr-url').textContent = data.publicUrl;
           document.getElementById('scan-count').textContent = '0';
           expiresAt = new Date(data.expiresAt).getTime();
+          if (data.pin) {
+            document.getElementById('pin-val').textContent = data.pin;
+            document.getElementById('pin-row').classList.remove('hidden');
+          } else {
+            document.getElementById('pin-row').classList.add('hidden');
+          }
           if (ticker) clearInterval(ticker);
           ticker = setInterval(tick, 1000);
           tick();
@@ -397,12 +423,14 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         case 'SESSION_STOPPED':
           if (ticker) { clearInterval(ticker); ticker = null; }
           expiresAt = null;
+          document.getElementById('pin-row').classList.add('hidden');
           showView('idle');
           break;
 
         case 'SESSION_EXPIRED':
           if (ticker) { clearInterval(ticker); ticker = null; }
           expiresAt = null;
+          document.getElementById('pin-row').classList.add('hidden');
           showView('expired');
           break;
 
