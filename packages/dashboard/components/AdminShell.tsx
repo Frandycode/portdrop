@@ -14,9 +14,9 @@
 'use client';
 
 import { useRouter }         from 'next/navigation';
-import { FiList, FiMessageSquare, FiLogOut } from 'react-icons/fi';
+import { FiGrid, FiList, FiMessageSquare, FiLogOut } from 'react-icons/fi';
 
-type NavTab = 'waitlist' | 'feedback';
+type NavTab = 'overview' | 'waitlist' | 'feedback';
 
 interface AdminShellProps {
   title:    string;
@@ -25,6 +25,7 @@ interface AdminShellProps {
 }
 
 const NAV: { key: NavTab; label: string; href: string; icon: React.ReactNode }[] = [
+  { key: 'overview', label: 'Overview', href: '/admin',          icon: <FiGrid size={14} /> },
   { key: 'waitlist', label: 'Waitlist', href: '/admin/waitlist', icon: <FiList size={14} /> },
   { key: 'feedback', label: 'Feedback', href: '/admin/feedback', icon: <FiMessageSquare size={14} /> },
 ];
