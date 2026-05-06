@@ -14,6 +14,7 @@
 import type { Metadata } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
+import { FeedbackWidget } from '../components/FeedbackWidget';
 import './globals.css';
 
 const SITE_URL = 'https://portdrop.app';
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="bg-portdrop-bg text-white antialiased">
         {children}
+        <FeedbackWidget />
       </body>
     </html>
   );
