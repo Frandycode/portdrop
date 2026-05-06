@@ -14,9 +14,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { usePostHog } from 'posthog-js/react';
 import { CodeBreederBadge } from '../components/CodeBreederBadge';
 
 export default function HomePage() {
+  const posthog = usePostHog();
   const [showBtt,       setShowBtt]       = useState(false);
   const [footerFaded,   setFooterFaded]   = useState(false);
   const [waitlistEmail, setWaitlistEmail] = useState('');
@@ -81,6 +83,7 @@ export default function HomePage() {
         setWaitlistState('error');
         setWaitlistMsg(data.error ?? 'Something went wrong.');
       } else {
+        posthog?.capture('waitlist_signup');
         setWaitlistState('success');
         setWaitlistMsg("You're on the list. We'll reach out when V2 launches.");
         setWaitlistEmail('');
@@ -109,7 +112,7 @@ export default function HomePage() {
             <a href="#changelog">Changelog</a>
             <a href="/roadmap">Roadmap</a>
           </div>
-          <button className="pd-nav-cta" onClick={() => window.open('https://marketplace.visualstudio.com/items?itemName=codebreeder.portdrop','_blank')}>Install <span className="pd-nav-arrow">→</span></button>
+          <button className="pd-nav-cta" onClick={() => { posthog?.capture('cta_click', { cta: 'nav_install' }); window.open('https://marketplace.visualstudio.com/items?itemName=codebreeder.portdrop','_blank'); }}>Install <span className="pd-nav-arrow">→</span></button>
         </nav>
 
         {/* HERO */}
@@ -134,11 +137,11 @@ export default function HomePage() {
               <em> localhost:</em> tabs or hunting through terminal scrollback.
             </p>
             <div className="pd-cta-row">
-              <button className="pd-btn-primary" onClick={() => window.open('https://marketplace.visualstudio.com/items?itemName=codebreeder.portdrop','_blank')}>
+              <button className="pd-btn-primary" onClick={() => { posthog?.capture('cta_click', { cta: 'hero_get_extension' }); window.open('https://marketplace.visualstudio.com/items?itemName=codebreeder.portdrop','_blank'); }}>
                 Get the Extension
                 <span className="pd-nav-arrow" style={{fontSize:'16px',lineHeight:'1'}}>→</span>
               </button>
-              <button className="pd-btn-secondary" onClick={() => window.open('https://github.com/Frandycode/portdrop','_blank')}>View on GitHub</button>
+              <button className="pd-btn-secondary" onClick={() => { posthog?.capture('cta_click', { cta: 'hero_github' }); window.open('https://github.com/Frandycode/portdrop','_blank'); }}>View on GitHub</button>
               <a href="/roadmap" style={{fontFamily:"'JetBrains Mono',monospace",fontSize:'11px',letterSpacing:'2px',textTransform:'uppercase',color:'rgba(212,168,83,0.55)',textDecoration:'none',whiteSpace:'nowrap'}}>
                 What&apos;s next →
               </a>

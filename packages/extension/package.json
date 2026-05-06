@@ -141,7 +141,9 @@
     "lint": "eslint src --ext ts",
     "type-check": "tsc --noEmit"
   },
-  "dependencies": {},
+  "dependencies": {
+    "posthog-node": "^5.33.3"
+  },
   "devDependencies": {
     "@types/node": "^20.12.7",
     "@types/qrcode": "^1.5.5",

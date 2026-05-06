@@ -19,6 +19,7 @@ import { resolveCloudflared } from './tunnel/installer';
 import { sessionStore } from './store/sessionStore';
 import { startRelay, stopRelay } from './relay/server';
 import { SidebarProvider } from './webview/SidebarProvider';
+import { shutdown as shutdownAnalytics } from './analytics';
 
 let statusBar: StatusBarManager;
 let session: SessionManager;
@@ -92,5 +93,6 @@ export async function deactivate(): Promise<void> {
   await session?.stop();
   sessionStore.clear();
   await stopRelay();
+  await shutdownAnalytics();
   console.log('[PortDrop] Extension deactivated.');
 }

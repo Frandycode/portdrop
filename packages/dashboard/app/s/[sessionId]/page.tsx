@@ -12,9 +12,10 @@
  */
 
 import { notFound } from 'next/navigation';
-import { PinGate }       from '@/components/PinGate';
-import { SessionLaunch } from '@/components/SessionLaunch';
-import { validateSession } from '@/lib/session';
+import { PinGate }            from '@/components/PinGate';
+import { SessionLaunch }      from '@/components/SessionLaunch';
+import { SessionPageTracker } from '@/components/SessionPageTracker';
+import { validateSession }    from '@/lib/session';
 import { FiUsers, FiZap, FiPower } from 'react-icons/fi';
 
 interface SessionPageProps {
@@ -119,12 +120,15 @@ export default async function SessionPage({ params }: SessionPageProps) {
   const { data: session } = result;
 
   return (
-    <SessionLaunch
-      sessionId={session.sessionId}
-      publicUrl={session.publicUrl}
-      expiresAt={session.expiresAt}
-      scanCount={session.scanCount}
-      oneTimeScan={session.oneTimeScan}
-    />
+    <>
+      <SessionPageTracker />
+      <SessionLaunch
+        sessionId={session.sessionId}
+        publicUrl={session.publicUrl}
+        expiresAt={session.expiresAt}
+        scanCount={session.scanCount}
+        oneTimeScan={session.oneTimeScan}
+      />
+    </>
   );
 }

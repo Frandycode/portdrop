@@ -20,6 +20,7 @@ import { generateQRDataUri } from './qrGenerator';
 import { sessionStore } from './store/sessionStore';
 import { TTLOption, SYSTEM_MAX_USERS } from './store/types';
 import { SidebarProvider } from './webview/SidebarProvider';
+import { track } from './analytics';
 
 export interface SessionConfig {
   port: number;
@@ -287,6 +288,7 @@ export class SessionManager {
           if (id !== record.sessionId) return;
           sessionStore.off('expired', this.expiryListener!);
           this.expiryListener = null;
+          track('session_expired');
           this.sidebar.post({ type: 'SESSION_EXPIRED' });
           vscode.window.showInformationMessage('[PortDrop] Session TTL reached. Tunnel closed.');
           this.stop();
@@ -346,6 +348,13 @@ export class SessionManager {
           pin,
           oneTimeScan,
           maxUsers:    record.maxUsers,
+        });
+
+        track('session_started', {
+          ttl:           customMs ? 'custom' : ttl,
+          has_pin:       !!pin,
+          one_time_scan: oneTimeScan,
+          max_users_set: maxUsers !== undefined,
         });
 
         const pinNotice = pin         ? `  ·  PIN: ${pin}` : '';
@@ -412,6 +421,7 @@ export class SessionManager {
       maxUsers: undefined,
     };
 
+    track('session_stopped');
     this.statusBar.setIdle();
     this.sidebar.post({ type: 'SESSION_STOPPED' });
     vscode.window.showInformationMessage('[PortDrop] Session stopped.');
