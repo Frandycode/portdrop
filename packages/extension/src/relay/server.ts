@@ -122,6 +122,50 @@ function handleRequest(
     return;
   }
 
+  // ── GET /file?sessionId=X&path=X ─────────────────────────────────────────
+  if (method === 'GET' && parsed.pathname === '/file') {
+    const sessionId = parsed.searchParams.get('sessionId') ?? '';
+    const filePath  = parsed.searchParams.get('path')      ?? '';
+    const record    = sessionStore.get(sessionId);
+
+    if (!record || record.status !== 'active' || !record.codeViewEnabled || !record.workspaceRoot) {
+      json(res, 404, { error: 'not_found' });
+      return;
+    }
+
+    // Path traversal guard — resolved path must stay inside workspaceRoot
+    const abs = path.resolve(record.workspaceRoot, filePath);
+    if (!abs.startsWith(record.workspaceRoot + path.sep) && abs !== record.workspaceRoot) {
+      json(res, 403, { error: 'forbidden' });
+      return;
+    }
+
+    // Reject blocked files (user might craft a direct request)
+    const name = path.basename(abs);
+    if (isBlocked(name, record.blocklist)) {
+      json(res, 403, { error: 'forbidden' });
+      return;
+    }
+
+    try {
+      const content     = fs.readFileSync(abs, 'utf8');
+      const contentType = mimeForExt(path.extname(abs));
+      res.writeHead(200, { 'Content-Type': contentType });
+      res.end(JSON.stringify({ content, path: filePath }));
+    } catch (err: unknown) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code === 'ENOENT') {
+        json(res, 404, { error: 'not_found' });
+      } else if (code === 'EISDIR') {
+        json(res, 400, { error: 'is_directory' });
+      } else {
+        console.error('[PortDrop:Relay] /file error:', err);
+        json(res, 500, { error: 'read_failed' });
+      }
+    }
+    return;
+  }
+
   // ── GET /files?sessionId=X ────────────────────────────────────────────────
   if (method === 'GET' && parsed.pathname === '/files') {
     const sessionId = parsed.searchParams.get('sessionId') ?? '';
@@ -226,6 +270,22 @@ export interface FileNode {
   path: string;
   type: 'file' | 'directory';
   children?: FileNode[];
+}
+
+function mimeForExt(ext: string): string {
+  const map: Record<string, string> = {
+    '.ts': 'application/json', '.tsx': 'application/json',
+    '.js': 'application/json', '.jsx': 'application/json',
+    '.json': 'application/json', '.md': 'application/json',
+    '.css': 'application/json', '.html': 'application/json',
+    '.py': 'application/json', '.rs': 'application/json',
+    '.go': 'application/json', '.java': 'application/json',
+    '.c': 'application/json',  '.cpp': 'application/json',
+    '.sh': 'application/json', '.yaml': 'application/json',
+    '.yml': 'application/json', '.toml': 'application/json',
+    '.sql': 'application/json', '.txt': 'application/json',
+  };
+  return map[ext.toLowerCase()] ?? 'application/json';
 }
 
 function buildFileTree(root: string, dir: string, blocklist: string[]): FileNode[] {
