@@ -54,8 +54,25 @@ function handleRequest(
     return;
   }
 
+  const parsed = new URL(url, 'http://localhost');
+
+  // ── GET /sessions/:sessionId/peek — config snapshot, no scan increment ─────
+  const peekMatch = parsed.pathname.match(/^\/sessions\/([a-f0-9]{32})\/peek$/);
+  if (method === 'GET' && peekMatch) {
+    const record = sessionStore.get(peekMatch[1]);
+    if (!record || record.status !== 'active' || record.burned || new Date() >= record.expiresAt) {
+      json(res, 404, { error: 'not_found' });
+      return;
+    }
+    json(res, 200, {
+      expiresAt: record.expiresAt.toISOString(),
+      maxUsers:  record.maxUsers ?? null,
+      scanCount: record.scanCount,
+    });
+    return;
+  }
+
   // ── GET /sessions/:sessionId ───────────────────────────────────────────────
-  const parsed       = new URL(url, 'http://localhost');
   const sessionMatch = parsed.pathname.match(/^\/sessions\/([a-f0-9]{32})$/);
   if (method === 'GET' && sessionMatch) {
     const sessionId = sessionMatch[1];
@@ -75,15 +92,22 @@ function handleRequest(
     }
 
     // Full access — verifies PIN (if any) and increments scan count
-    const data = sessionStore.access(sessionId, pin);
-    if (!data) {
-      // PIN was supplied but wrong (session still exists per peek above)
-      const status = pin ? 401 : 404;
-      const error  = pin ? 'Invalid PIN' : 'Session not found or expired';
-      json(res, status, { error, sessionId });
+    const result = sessionStore.access(sessionId, pin);
+    if (!result.ok) {
+      switch (result.reason) {
+        case 'wrong_pin':
+          json(res, 401, { error: 'wrong_pin',       sessionId }); break;
+        case 'one_time_burned':
+          json(res, 410, { error: 'one_time_burned', sessionId }); break;
+        case 'capacity_full':
+          json(res, 403, { error: 'capacity_full',   sessionId }); break;
+        default:
+          json(res, 404, { error: 'not_found',       sessionId }); break;
+      }
       return;
     }
 
+    const { data } = result;
     json(res, 200, {
       sessionId:       data.sessionId,
       publicUrl:       data.publicUrl,
@@ -91,6 +115,7 @@ function handleRequest(
       codeViewEnabled: data.codeViewEnabled,
       oneTimeScan:     data.oneTimeScan,
       scanCount:       data.scanCount,
+      maxUsers:        data.maxUsers,
     });
     return;
   }

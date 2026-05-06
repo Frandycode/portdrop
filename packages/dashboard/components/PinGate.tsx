@@ -13,10 +13,10 @@
 
 'use client';
 
-import { KeyboardEvent, useRef, useState } from 'react';
-import { AppPreview } from './AppPreview';
-import { PortDropBadge } from './PortDropBadge';
-import { TTLCountdown } from './TTLCountdown';
+import { useRef, useState } from 'react';
+import { FiLock } from 'react-icons/fi';
+import { SessionLaunch } from './SessionLaunch';
+import { CodeBreederBadge } from './CodeBreederBadge';
 
 interface SessionData {
   sessionId:   string;
@@ -28,65 +28,65 @@ interface SessionData {
 
 function LogoMark({ size = 20 }: { size?: number }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={size} height={size} fill="none">
-      <circle cx="12" cy="12" r="11" stroke="#C48540" strokeWidth="1.2"/>
-      <circle cx="12" cy="12" r="7.8" fill="rgba(13,30,56,0.95)" stroke="#C48540" strokeWidth="0.9"/>
-      {/* r≈6, 8 dots — full opacity */}
-      <circle cx="18.0" cy="12.0" r="0.65" fill="#C48540"/>
-      <circle cx="16.2" cy="16.2" r="0.65" fill="#C48540"/>
-      <circle cx="12.0" cy="18.0" r="0.65" fill="#C48540"/>
-      <circle cx="7.8"  cy="16.2" r="0.65" fill="#C48540"/>
-      <circle cx="6.0"  cy="12.0" r="0.65" fill="#C48540"/>
-      <circle cx="7.8"  cy="7.8"  r="0.65" fill="#C48540"/>
-      <circle cx="12.0" cy="6.0"  r="0.65" fill="#C48540"/>
-      <circle cx="16.2" cy="7.8"  r="0.65" fill="#C48540"/>
-      {/* r≈4.2, 6 dots — mid opacity */}
-      <circle cx="16.2" cy="12.0" r="0.60" fill="#C48540" opacity="0.52"/>
-      <circle cx="14.1" cy="15.6" r="0.60" fill="#C48540" opacity="0.52"/>
-      <circle cx="9.9"  cy="15.6" r="0.60" fill="#C48540" opacity="0.52"/>
-      <circle cx="7.8"  cy="12.0" r="0.60" fill="#C48540" opacity="0.52"/>
-      <circle cx="9.9"  cy="8.4"  r="0.60" fill="#C48540" opacity="0.52"/>
-      <circle cx="14.1" cy="8.4"  r="0.60" fill="#C48540" opacity="0.52"/>
-      {/* r≈2.4, 4 dots — faint */}
-      <circle cx="14.4" cy="12.0" r="0.55" fill="#C48540" opacity="0.18"/>
-      <circle cx="12.0" cy="14.4" r="0.55" fill="#C48540" opacity="0.18"/>
-      <circle cx="9.6"  cy="12.0" r="0.55" fill="#C48540" opacity="0.18"/>
-      <circle cx="12.0" cy="9.6"  r="0.55" fill="#C48540" opacity="0.18"/>
-      <rect x="8.8" y="5.8" width="6.4" height="4.2" rx="0.7" fill="#D4A853" fillOpacity="0.14" stroke="#D4A853" strokeWidth="0.7"/>
-      <line x1="10.4" y1="10.0" x2="10.4" y2="12.1" stroke="#D4A853" strokeWidth="0.95" strokeLinecap="round"/>
-      <line x1="13.6" y1="10.0" x2="13.6" y2="12.1" stroke="#D4A853" strokeWidth="0.95" strokeLinecap="round"/>
-      <line x1="12" y1="12.1" x2="12" y2="13.2" stroke="#C48540" strokeWidth="0.65" strokeDasharray="0.9,0.9" opacity="0.85"/>
-      <rect x="8.2" y="13.2" width="7.6" height="5.0" rx="0.8" fill="rgba(196,133,58,0.09)" stroke="#C48540" strokeWidth="0.7"/>
-      <rect x="9.2"  y="14.1" width="2.3" height="3.2" rx="0.4" fill="#C48540" fillOpacity="0.92"/>
-      <rect x="12.5" y="14.1" width="2.3" height="3.2" rx="0.4" fill="#C48540" fillOpacity="0.92"/>
-      <circle cx="12.0" cy="1.0"  r="0.8" fill="#C48540" opacity="0.65"/>
-      <circle cx="23.0" cy="12.0" r="0.8" fill="#C48540" opacity="0.65"/>
-      <circle cx="12.0" cy="23.0" r="0.8" fill="#C48540" opacity="0.65"/>
-      <circle cx="1.0"  cy="12.0" r="0.8" fill="#C48540" opacity="0.65"/>
-    </svg>
+    <img src="/logo/portdrop-favicon-32.svg" alt="PortDrop" width={size} height={size} />
   );
 }
 
-export function PinGate({ sessionId }: { sessionId: string }) {
-  const [digits, setDigits]   = useState(['', '', '', '']);
-  const [error, setError]     = useState<string | null>(null);
-  const [shaking, setShaking] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [session, setSession] = useState<SessionData | null>(null);
+// ── PIN slot component ────────────────────────────────────────────────────────
 
-  const ref0 = useRef<HTMLInputElement>(null);
-  const ref1 = useRef<HTMLInputElement>(null);
-  const ref2 = useRef<HTMLInputElement>(null);
-  const ref3 = useRef<HTMLInputElement>(null);
-  const inputRefs = [ref0, ref1, ref2, ref3];
+function PinSlot({ filled, error, permanent }: { filled: boolean; error: boolean; permanent: boolean }) {
+  const borderColor = permanent
+    ? 'rgba(196,133,58,0.4)'
+    : error ? '#ef4444'
+    : filled ? '#22d3ee'
+    : '#1e293b';
+  const bg = permanent
+    ? 'rgba(196,133,58,0.06)'
+    : error ? 'rgba(239,68,68,0.08)'
+    : filled ? 'rgba(34,211,238,0.08)'
+    : 'rgba(15,23,42,0.8)';
+  const dotColor = permanent ? '#C48540' : error ? '#ef4444' : '#22d3ee';
+
+  return (
+    <div style={{
+      width: 56, height: 64, borderRadius: 14,
+      border: `2px solid ${borderColor}`,
+      background: bg,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      transition: 'border-color 0.15s, background 0.15s',
+      boxShadow: filled && !error && !permanent ? '0 0 12px rgba(34,211,238,0.18)' : 'none',
+      opacity: permanent ? 0.55 : 1,
+    }}>
+      {filled && (
+        <div style={{
+          width: 10, height: 10, borderRadius: '50%',
+          background: dotColor, transition: 'background 0.15s',
+        }} />
+      )}
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
+export function PinGate({ sessionId }: { sessionId: string }) {
+  const [value,     setValue]     = useState('');
+  const [error,     setError]     = useState<string | null>(null);
+  const [permanent, setPermanent] = useState(false); // error the user cannot retry
+  const [shaking,   setShaking]   = useState(false);
+  const [loading,   setLoading]   = useState(false);
+  const [session,   setSession]   = useState<SessionData | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const focusInput = () => { if (!permanent) inputRef.current?.focus(); };
 
   const shake = () => {
     setShaking(true);
-    setTimeout(() => setShaking(false), 500);
+    setTimeout(() => setShaking(false), 520);
   };
 
   const submit = async (pin: string) => {
-    if (pin.length !== 4) return;
+    if (pin.length !== 4 || loading || permanent) return;
     setLoading(true);
     setError(null);
     try {
@@ -94,11 +94,10 @@ export function PinGate({ sessionId }: { sessionId: string }) {
       if (res.ok) {
         const data = await res.json();
         if (data.pinRequired) {
-          // Shouldn't happen — relay returned pin-required despite a pin being sent
-          setError('Session requires a PIN.');
+          // Shouldn't happen when a PIN is supplied, but guard anyway
+          setError('Incorrect PIN. Try again.');
           shake();
-          setDigits(['', '', '', '']);
-          inputRefs[0].current?.focus();
+          setValue('');
         } else {
           setSession({
             sessionId:   data.sessionId,
@@ -111,163 +110,251 @@ export function PinGate({ sessionId }: { sessionId: string }) {
       } else if (res.status === 401) {
         setError('Incorrect PIN. Try again.');
         shake();
-        setDigits(['', '', '', '']);
-        inputRefs[0].current?.focus();
+        setValue('');
+      } else if (res.status === 410) {
+        // One-time PIN already consumed — retrying will never work
+        setError('This PIN has already been claimed by someone else.');
+        setPermanent(true);
+      } else if (res.status === 403) {
+        // Session viewer cap reached
+        setError('This session is full — no more viewers are allowed.');
+        setPermanent(true);
       } else {
         setError('Session not found or has expired.');
+        shake();
+        setValue('');
       }
     } catch {
       setError('Could not reach the session. Is VS Code running?');
+      shake();
     }
     setLoading(false);
+    if (!permanent) setTimeout(() => inputRef.current?.focus(), 50);
   };
 
-  const handleChange = (index: number, value: string) => {
-    if (!/^\d?$/.test(value)) return;
-    const next = [...digits];
-    next[index] = value;
-    setDigits(next);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, '').slice(0, 4);
+    setValue(raw);
     setError(null);
-
-    if (value && index < 3) {
-      inputRefs[index + 1].current?.focus();
-    }
-    if (value && index === 3) {
-      const pin = next.join('');
-      if (pin.length === 4) submit(pin);
-    }
+    if (raw.length === 4) submit(raw);
   };
 
-  const handleKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !digits[index] && index > 0) {
-      inputRefs[index - 1].current?.focus();
-    }
-    if (e.key === 'Enter') {
-      const pin = digits.join('');
-      if (pin.length === 4) submit(pin);
-    }
-  };
-
-  // ── Unlocked: render the full session view ──────────────────────────────────
+  // ── Unlocked: session launch portal ──────────────────────────────────────
   if (session) {
-    const displayUrl = session.publicUrl.replace(/^https?:\/\//, '');
     return (
-      <main className="relative flex min-h-screen flex-col bg-portdrop-bg">
-        <header className="flex items-center justify-between border-b border-portdrop-border bg-portdrop-surface/60 px-5 py-2.5 backdrop-blur-sm">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <LogoMark />
-            <span className="font-mono text-sm font-semibold tracking-widest text-portdrop-cyan uppercase">
-              PortDrop
-            </span>
-            <span className="hidden sm:block text-portdrop-border font-mono">·</span>
-            <span
-              className="hidden sm:block font-mono text-[10px] text-portdrop-muted truncate max-w-[260px]"
-              title={session.publicUrl}
-            >
-              {displayUrl}
-            </span>
-            {session.oneTimeScan && (
-              <span className="hidden sm:flex items-center gap-1 rounded border border-[#eab308]/30 bg-[#eab308]/10 px-2 py-0.5 font-mono text-[9px] font-semibold tracking-widest text-[#eab308] uppercase">
-                ⚡ One-time link
-              </span>
-            )}
-          </div>
-          <TTLCountdown expiresAt={session.expiresAt} />
-        </header>
-        <div className="flex flex-1 overflow-hidden">
-          <AppPreview tunnelUrl={session.publicUrl} expiresAt={session.expiresAt} />
-        </div>
-        <PortDropBadge
-          expiresAt={session.expiresAt}
-          scanCount={session.scanCount}
-          oneTimeScan={session.oneTimeScan}
-        />
-      </main>
+      <SessionLaunch
+        sessionId={session.sessionId}
+        publicUrl={session.publicUrl}
+        expiresAt={session.expiresAt}
+        scanCount={session.scanCount}
+        oneTimeScan={session.oneTimeScan}
+        pinProtected
+      />
     );
   }
 
-  // ── PIN entry ───────────────────────────────────────────────────────────────
+  // ── PIN entry screen ──────────────────────────────────────────────────────
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-10 bg-portdrop-bg px-6">
-      {/* Logo */}
-      <div className="flex flex-col items-center gap-3">
-        <LogoMark size={52} />
-        <span className="font-mono text-sm font-semibold tracking-widest text-portdrop-cyan uppercase">
-          PortDrop
-        </span>
-      </div>
-
-      {/* Card */}
-      <div className="w-full max-w-sm rounded-xl border border-dashed border-[rgba(196,133,58,0.35)] bg-portdrop-surface/60 p-8 text-center backdrop-blur-sm">
-        <h1 className="mb-1 font-mono text-base font-bold tracking-widest text-[#D4A853] uppercase">
-          PIN Required
-        </h1>
-        <p className="mb-8 font-mono text-[11px] text-portdrop-muted">
-          Ask the developer for the 4-digit code.
-        </p>
-
-        {/* 4-digit inputs */}
-        <div
-          className={`flex justify-center gap-3 ${shaking ? 'animate-[pin-shake_0.5s_ease-in-out]' : ''}`}
-          style={shaking ? { animation: 'pin-shake 0.5s ease-in-out' } : undefined}
-        >
-          {digits.map((d, i) => (
-            <input
-              key={i}
-              ref={inputRefs[i]}
-              type="text"
-              inputMode="numeric"
-              maxLength={1}
-              value={d}
-              autoFocus={i === 0}
-              onChange={(e) => handleChange(i, e.target.value)}
-              onKeyDown={(e) => handleKeyDown(i, e)}
-              className={[
-                'h-16 w-12 rounded-lg border bg-portdrop-bg text-center',
-                'font-mono text-2xl font-bold text-[#D4A853]',
-                'outline-none transition-all duration-150',
-                'caret-transparent',
-                error
-                  ? 'border-[#ef4444]/60 shadow-[0_0_0_1px_rgba(239,68,68,0.3)]'
-                  : d
-                  ? 'border-[#C48540] shadow-[0_0_0_1px_rgba(196,133,58,0.25)]'
-                  : 'border-dashed border-[rgba(196,133,58,0.35)] focus:border-[#C48540] focus:shadow-[0_0_0_1px_rgba(196,133,58,0.2)]',
-              ].join(' ')}
-            />
-          ))}
-        </div>
-
-        {/* Error */}
-        {error && (
-          <p className="mt-4 font-mono text-[11px] text-[#ef4444]">{error}</p>
-        )}
-
-        {/* Submit */}
-        <button
-          onClick={() => submit(digits.join(''))}
-          disabled={loading || digits.join('').length < 4}
-          className="mt-6 w-full rounded-lg border border-dashed border-[rgba(196,133,58,0.4)] bg-[rgba(196,133,58,0.08)] py-2.5 font-mono text-xs font-semibold uppercase tracking-widest text-[#D4A853] transition-all hover:border-[#C48540] hover:bg-[rgba(196,133,58,0.14)] disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {loading ? 'Verifying…' : 'Unlock →'}
-        </button>
-      </div>
-
-      <p className="font-mono text-[10px] text-portdrop-muted">
-        Powered by{' '}
-        <a href="https://portdrop.dev" className="text-portdrop-cyan hover:underline" target="_blank" rel="noopener noreferrer">
-          PortDrop
-        </a>
-      </p>
-
+    <>
       <style>{`
         @keyframes pin-shake {
           0%, 100% { transform: translateX(0); }
-          20%       { transform: translateX(-8px); }
-          40%       { transform: translateX(8px); }
-          60%       { transform: translateX(-5px); }
-          80%       { transform: translateX(5px); }
+          18%       { transform: translateX(-10px); }
+          36%       { transform: translateX(10px); }
+          54%       { transform: translateX(-6px); }
+          72%       { transform: translateX(6px); }
+          88%       { transform: translateX(-3px); }
         }
+        .pin-shake { animation: pin-shake 0.52s ease-in-out; }
+
+        @keyframes slot-pop {
+          0%   { transform: scale(1); }
+          40%  { transform: scale(1.12); }
+          100% { transform: scale(1); }
+        }
+        .slot-pop { animation: slot-pop 0.18s ease-out; }
       `}</style>
-    </main>
+
+      <main
+        className="jeans-raw jeans-stitch"
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '24px',
+          fontFamily: 'var(--font-geist-mono), monospace',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Subtle radial glow */}
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'radial-gradient(ellipse 60% 50% at 50% 50%, rgba(34,211,238,0.04) 0%, transparent 70%)',
+        }} />
+
+        {/* Card */}
+        <div
+          style={{
+            width: '100%',
+            maxWidth: 360,
+            background: 'rgba(15,23,42,0.85)',
+            border: '1px solid #1e293b',
+            borderRadius: 24,
+            padding: '40px 36px',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 32,
+            position: 'relative',
+            boxShadow: '0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04) inset',
+          }}
+        >
+          {/* Logo + wordmark */}
+          <a
+            href="/"
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+              textDecoration: 'none',
+              opacity: 0.9,
+              transition: 'opacity 0.15s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+            onMouseLeave={e => (e.currentTarget.style.opacity = '0.9')}
+          >
+            <LogoMark size={48} />
+            <span style={{
+              fontFamily: 'var(--font-geist-mono), monospace',
+              fontSize: 11,
+              letterSpacing: '0.25em',
+              textTransform: 'uppercase',
+              color: '#22d3ee',
+              fontWeight: 600,
+            }}>
+              PortDrop
+            </span>
+          </a>
+
+          {/* Divider */}
+          <div style={{ width: '100%', height: 1, background: '#1e293b' }} />
+
+          {/* Lock icon + heading */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 14,
+              background: 'rgba(196,133,58,0.1)',
+              border: '1px solid rgba(196,133,58,0.28)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#D4A853',
+            }}>
+              <FiLock size={20} />
+            </div>
+            <h1 style={{
+              fontSize: 16,
+              fontWeight: 700,
+              color: '#D4A853',
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              margin: 0,
+            }}>
+              PIN Required
+            </h1>
+            <p style={{
+              fontSize: 11,
+              color: '#64748b',
+              letterSpacing: '0.05em',
+              margin: 0,
+              textAlign: 'center',
+              lineHeight: 1.6,
+            }}>
+              Ask the developer for the 4‑digit code
+            </p>
+          </div>
+
+          {/* PIN slots */}
+          <div
+            onClick={focusInput}
+            style={{ position: 'relative', cursor: 'text' }}
+          >
+            {/* Hidden real input — disabled once a permanent error is shown */}
+            <input
+              ref={inputRef}
+              type="tel"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={4}
+              value={value}
+              onChange={handleChange}
+              autoFocus
+              autoComplete="one-time-code"
+              disabled={permanent}
+              style={{
+                position: 'absolute',
+                opacity: 0,
+                width: '100%',
+                height: '100%',
+                top: 0,
+                left: 0,
+                cursor: permanent ? 'default' : 'text',
+                fontSize: 16,
+                border: 'none',
+                outline: 'none',
+                zIndex: 1,
+              }}
+            />
+
+            {/* Visual slots */}
+            <div
+              className={shaking ? 'pin-shake' : ''}
+              style={{ display: 'flex', gap: 12 }}
+            >
+              {[0, 1, 2, 3].map(i => (
+                <PinSlot key={i} filled={value.length > i} error={!!error && !permanent} permanent={permanent} />
+              ))}
+            </div>
+          </div>
+
+          {/* Error message */}
+          <div style={{ minHeight: 18, textAlign: 'center' }}>
+            {error && (
+              <p style={{
+                fontSize: 11,
+                color: '#ef4444',
+                letterSpacing: '0.05em',
+                margin: 0,
+              }}>
+                {error}
+              </p>
+            )}
+          </div>
+
+          {/* Loading indicator */}
+          {loading && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#64748b', fontSize: 11, letterSpacing: '0.1em' }}>
+              <div style={{
+                width: 14, height: 14, borderRadius: '50%',
+                border: '2px solid #1e293b',
+                borderTopColor: '#22d3ee',
+                animation: 'spin 0.7s linear infinite',
+              }} />
+              Verifying…
+            </div>
+          )}
+        </div>
+
+        {/* Credit */}
+        <div style={{ marginTop: 32, opacity: 0.45 }}>
+          <CodeBreederBadge />
+        </div>
+
+        <style>{`
+          @keyframes spin { to { transform: rotate(360deg); } }
+        `}</style>
+      </main>
+    </>
   );
 }

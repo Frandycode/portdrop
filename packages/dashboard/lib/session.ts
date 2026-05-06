@@ -18,11 +18,14 @@ export interface SessionData {
   codeViewEnabled: boolean;
   oneTimeScan:     boolean;
   scanCount:       number;
+  maxUsers?:       number;
 }
 
 export type SessionResult =
-  | { type: 'ok';           data: SessionData }
-  | { type: 'pin-required'; sessionId: string }
+  | { type: 'ok';              data: SessionData }
+  | { type: 'pin-required';    sessionId: string }
+  | { type: 'capacity-full' }
+  | { type: 'one-time-burned' }
   | { type: 'not-found' };
 
 /**
@@ -42,7 +45,11 @@ export async function validateSession(
 
     const res = await fetch(url, { cache: 'no-store' });
 
-    if (!res.ok) return { type: 'not-found' };
+    if (!res.ok) {
+      if (res.status === 410) return { type: 'one-time-burned' };
+      if (res.status === 403) return { type: 'capacity-full' };
+      return { type: 'not-found' };
+    }
 
     const data = await res.json();
 
@@ -60,6 +67,7 @@ export async function validateSession(
         codeViewEnabled: data.codeViewEnabled,
         oneTimeScan:     data.oneTimeScan,
         scanCount:       data.scanCount,
+        maxUsers:        data.maxUsers,
       },
     };
   } catch (err) {

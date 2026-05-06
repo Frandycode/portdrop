@@ -18,7 +18,7 @@ import { resolveCloudflared } from './tunnel/installer';
 import { startTunnel, stopTunnel } from './tunnel/cloudflare';
 import { generateQRDataUri } from './qrGenerator';
 import { sessionStore } from './store/sessionStore';
-import { TTLOption } from './store/types';
+import { TTLOption, SYSTEM_MAX_USERS } from './store/types';
 import { SidebarProvider } from './webview/SidebarProvider';
 
 export interface SessionConfig {
@@ -36,6 +36,7 @@ export interface SessionState {
   expiresAt: Date | null;
   config: SessionConfig | null;
   pin: string | undefined;
+  maxUsers: number | undefined;
 }
 
 export class SessionManager {
@@ -47,13 +48,15 @@ export class SessionManager {
     expiresAt: null,
     config: null,
     pin: undefined,
+    maxUsers: undefined,
   };
 
   private tunnelProcess: ChildProcess | null  = null;
   private ttlTimer: NodeJS.Timeout | null     = null;
   private currentSessionId: string | null     = null;
-  private expiryListener: ((id: string) => void) | null          = null;
-  private scanListener:   ((id: string, count: number, at: Date) => void) | null = null;
+  private expiryListener:  ((id: string) => void) | null          = null;
+  private scanListener:    ((id: string, count: number, at: Date) => void) | null = null;
+  private updateListener:  ((id: string, update: { expiresAt?: Date; maxUsers?: number | null }) => void) | null = null;
   private stoppingIntentionally = false;
 
   constructor(
@@ -64,9 +67,20 @@ export class SessionManager {
     // ── Handle messages sent from the sidebar React UI ───────────────────────
     sidebar.onMessage((msg) => {
       switch (msg.type) {
-        case 'REQUEST_STOP':             this.stop();          break;
-        case 'REQUEST_COPY_URL':         this.copyUrl();       break;
-        case 'REQUEST_OPEN_DASHBOARD':   this.openDashboard(); break;
+        case 'REQUEST_STOP':           this.stop();          break;
+        case 'REQUEST_COPY_URL':       this.copyUrl();       break;
+        case 'REQUEST_OPEN_DASHBOARD': this.openDashboard(); break;
+        case 'REQUEST_ADJUST_TTL':
+          if (this.currentSessionId) {
+            sessionStore.adjustTTL(this.currentSessionId, msg.deltaMs);
+          }
+          break;
+        case 'REQUEST_UPDATE_USERS':
+          if (this.currentSessionId) {
+            sessionStore.updateMaxUsers(this.currentSessionId, msg.maxUsers);
+            this.state.maxUsers = msg.maxUsers;
+          }
+          break;
       }
     });
 
@@ -85,6 +99,7 @@ export class SessionManager {
         port:        this.state.config!.port,
         pin:         this.state.pin,
         oneTimeScan: this.state.config!.oneTimeScan,
+        maxUsers:    this.state.maxUsers,
       });
     });
   }
@@ -147,6 +162,41 @@ export class SessionManager {
     if (!otsPick) return;
     const oneTimeScan = otsPick.oneTimeScan;
 
+    // ── Max viewers (multi-use only) ─────────────────────────────────────────
+    let maxUsers: number | undefined;
+    if (!oneTimeScan) {
+      const maxPick = await vscode.window.showQuickPick(
+        [
+          { label: `$(infinity) Unlimited`,                                      value: undefined as number | undefined },
+          { label: `$(person)   2 viewers max`,                                  value: 2 },
+          { label: `$(people)   5 viewers max`,                                  value: 5 },
+          { label: `$(people)   ${SYSTEM_MAX_USERS} viewers max  (system cap)`,  value: SYSTEM_MAX_USERS },
+          { label: `$(edit)     Custom (1–${SYSTEM_MAX_USERS})…`,                value: -1 },
+        ],
+        { title: 'PortDrop — How many viewers can access this session?' },
+      );
+      if (!maxPick) return;
+
+      if (maxPick.value === -1) {
+        const input = await vscode.window.showInputBox({
+          title:         'PortDrop — Max viewers',
+          prompt:        `Enter a number between 1 and ${SYSTEM_MAX_USERS}`,
+          placeHolder:   '3',
+          validateInput: (v) => {
+            const n = parseInt(v, 10);
+            if (isNaN(n) || n < 1 || n > SYSTEM_MAX_USERS) {
+              return `Must be a whole number between 1 and ${SYSTEM_MAX_USERS}`;
+            }
+            return null;
+          },
+        });
+        if (!input) return;
+        maxUsers = parseInt(input, 10);
+      } else {
+        maxUsers = maxPick.value;
+      }
+    }
+
     // ── Optional PIN ────────────────────────────────────────────────────────
     const pinPick = await vscode.window.showQuickPick(
       [
@@ -202,7 +252,7 @@ export class SessionManager {
 
         // Register with the session store — store owns TTL scheduling
         const record = sessionStore.create({
-          publicUrl:       result.publicUrl,
+          publicUrl:       result.publicUrl, // raw tunnel URL — stored for the iframe
           qrDataUri:       '',
           port,
           ttl,
@@ -210,12 +260,18 @@ export class SessionManager {
           oneTimeScan,
           codeViewEnabled: false,
           pin,
+          maxUsers,
         });
 
+        // Session URL is what gets shared — routes through the dashboard so the
+        // relay can enforce PIN, scan count, and one-time-link burn.
+        // The raw tunnel URL (result.publicUrl) is kept only inside the relay store.
+        const sessionUrl = `http://localhost:3001/s/${record.sessionId}`;
 
-        // Generate QR — points to relay redirect which logs scan then redirects to app
-        const qrDataUri  = await generateQRDataUri(result.publicUrl);
+        // QR encodes the session URL, not the raw tunnel
+        const qrDataUri  = await generateQRDataUri(sessionUrl);
         record.qrDataUri = qrDataUri;
+
         // React to store-driven expiry (TTL reached or one-time-scan burned)
         this.expiryListener = (id: string) => {
           if (id !== record.sessionId) return;
@@ -235,37 +291,57 @@ export class SessionManager {
         };
         sessionStore.on('scanned', this.scanListener);
 
+        // Forward admin updates (TTL / viewer cap) to sidebar and status bar
+        this.updateListener = (id: string, update: { expiresAt?: Date; maxUsers?: number | null }) => {
+          if (id !== record.sessionId) return;
+          if (update.expiresAt) {
+            this.state.expiresAt = update.expiresAt;
+            this.statusBar.setActive(update.expiresAt, this.state.publicUrl!);
+          }
+          if (update.maxUsers !== undefined) {
+            this.state.maxUsers = update.maxUsers === null ? undefined : update.maxUsers;
+          }
+          this.sidebar.post({
+            type:      'SESSION_UPDATED',
+            expiresAt: update.expiresAt?.toISOString(),
+            maxUsers:  update.maxUsers,
+          });
+        };
+        sessionStore.on('updated', this.updateListener);
+
         this.currentSessionId = record.sessionId;
 
         this.state = {
           active:    true,
-          publicUrl: result.publicUrl,
+          publicUrl: sessionUrl, // session URL is what the user copies / scans / opens
           qrDataUri,
           startedAt: record.startedAt,
           expiresAt: record.expiresAt,
           config:    { port, ttl, oneTimeScan, codeViewEnabled: false },
           pin,
+          maxUsers:  record.maxUsers,
         };
 
-        this.statusBar.setActive(record.expiresAt, result.publicUrl);
+        this.statusBar.setActive(record.expiresAt, sessionUrl);
 
         // ── Notify sidebar ─────────────────────────────────────────────────
         this.sidebar.post({
           type:        'SESSION_STARTED',
           sessionId:   record.sessionId,
-          publicUrl:   result.publicUrl,
+          publicUrl:   sessionUrl,
           qrDataUri,
           expiresAt:   record.expiresAt.toISOString(),
           ttl,
           port,
           pin,
           oneTimeScan,
+          maxUsers:    record.maxUsers,
         });
 
         const pinNotice = pin         ? `  ·  PIN: ${pin}` : '';
         const otsNotice = oneTimeScan ? '  ·  ⚡ one-time link' : '';
         vscode.window.showInformationMessage(
-          `[PortDrop] Session live → ${result.publicUrl}${otsNotice}${pinNotice}`,
+          `[PortDrop] Session live → ${sessionUrl}${otsNotice}${pinNotice}`,
           'Copy URL',
           'Open Dashboard',
         ).then((action) => {
@@ -305,6 +381,11 @@ export class SessionManager {
       this.scanListener = null;
     }
 
+    if (this.updateListener) {
+      sessionStore.off('updated', this.updateListener);
+      this.updateListener = null;
+    }
+
     if (this.currentSessionId) {
       sessionStore.stop(this.currentSessionId);
       this.currentSessionId = null;
@@ -318,6 +399,7 @@ export class SessionManager {
       expiresAt: null,
       config: null,
       pin: undefined,
+      maxUsers: undefined,
     };
 
     this.statusBar.setIdle();

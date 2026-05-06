@@ -17,7 +17,8 @@ export type ExtensionMessage =
   | SessionStartedMessage
   | SessionStoppedMessage
   | SessionExpiredMessage
-  | ScanReceivedMessage;
+  | ScanReceivedMessage
+  | SessionUpdatedMessage;
 
 export interface SessionStartedMessage {
   type:         'SESSION_STARTED';
@@ -29,6 +30,13 @@ export interface SessionStartedMessage {
   port:         number;
   pin?:         string;   // raw PIN shown to the developer; undefined = no PIN
   oneTimeScan?: boolean;  // true = link burns after first successful open
+  maxUsers?:    number;   // undefined = unlimited
+}
+
+export interface SessionUpdatedMessage {
+  type:      'SESSION_UPDATED';
+  expiresAt?: string;       // ISO string — new expiry if TTL was adjusted
+  maxUsers?:  number | null; // null = cap removed; number = new cap
 }
 
 export interface SessionStoppedMessage {
@@ -50,7 +58,9 @@ export interface ScanReceivedMessage {
 export type WebviewMessage =
   | StopRequestMessage
   | CopyUrlRequestMessage
-  | OpenDashboardRequestMessage;
+  | OpenDashboardRequestMessage
+  | AdjustTTLRequestMessage
+  | UpdateMaxUsersRequestMessage;
 
 export interface StopRequestMessage {
   type: 'REQUEST_STOP';
@@ -62,4 +72,14 @@ export interface CopyUrlRequestMessage {
 
 export interface OpenDashboardRequestMessage {
   type: 'REQUEST_OPEN_DASHBOARD';
+}
+
+export interface AdjustTTLRequestMessage {
+  type:    'REQUEST_ADJUST_TTL';
+  deltaMs: number; // positive = extend, negative = shrink
+}
+
+export interface UpdateMaxUsersRequestMessage {
+  type:     'REQUEST_UPDATE_USERS';
+  maxUsers: number | undefined; // undefined = remove cap (unlimited)
 }

@@ -17,17 +17,21 @@ import { useEffect, useState } from 'react';
 
 interface TTLCountdownProps {
   expiresAt: Date;
+  compact?:  boolean; // just the clock, no "Expires in" prefix
 }
 
-export function TTLCountdown({ expiresAt }: TTLCountdownProps) {
-  const [remaining, setRemaining] = useState(expiresAt.getTime() - Date.now());
+export function TTLCountdown({ expiresAt, compact = false }: TTLCountdownProps) {
+  const [remaining, setRemaining] = useState<number | null>(null);
 
   useEffect(() => {
+    setRemaining(expiresAt.getTime() - Date.now());
     const interval = setInterval(() => {
       setRemaining(expiresAt.getTime() - Date.now());
     }, 1000);
     return () => clearInterval(interval);
   }, [expiresAt]);
+
+  if (remaining === null) return null;
 
   const expired = remaining <= 0;
   const m = Math.max(0, Math.floor(remaining / 60_000));
@@ -39,6 +43,14 @@ export function TTLCountdown({ expiresAt }: TTLCountdownProps) {
     : remaining > 60_000
     ? 'text-[#eab308]'
     : 'text-[#ef4444] animate-pulse';
+
+  if (compact) {
+    return (
+      <span className={`font-mono ${expired ? 'text-[#ef4444]' : colorClass}`}>
+        {expired ? 'expired' : clock}
+      </span>
+    );
+  }
 
   return (
     <span className={`font-mono text-sm ${expired ? 'text-[#ef4444]' : colorClass}`}>

@@ -12,14 +12,17 @@
  */
 
 import { useEffect, useReducer, useState } from 'react';
-import { ExtensionMessage, SessionStartedMessage, ScanReceivedMessage } from './messages';
+import { ExtensionMessage, SessionStartedMessage, ScanReceivedMessage, WebviewMessage } from './messages';
 import { vscode } from './vscode-api';
-import { QRPanel }       from './components/QRPanel';
-import { TTLClock }      from './components/TTLClock';
-import { SessionConfig } from './components/SessionConfig';
-import { AccessLog }     from './components/AccessLog';
+import { QRPanel }            from './components/QRPanel';
+import { TTLClock }           from './components/TTLClock';
+import { SessionConfig }      from './components/SessionConfig';
+import { AccessLog }          from './components/AccessLog';
+import { CodeBreederBadge }   from './components/CodeBreederBadge';
 
 // ── Domain types (consumed by child components in later steps) ────────────────
+
+const SYSTEM_MAX_USERS = 10;
 
 export interface ScanEntry {
   n:  number;
@@ -35,6 +38,7 @@ export interface ActiveSession {
   port:         number;
   pin?:         string;
   oneTimeScan?: boolean;
+  maxUsers?:    number;
   scanCount:    number;
   scanLog:      ScanEntry[];
 }
@@ -52,7 +56,8 @@ type Action =
   | { type: 'SESSION_STARTED'; msg: SessionStartedMessage }
   | { type: 'SESSION_STOPPED' }
   | { type: 'SESSION_EXPIRED' }
-  | { type: 'SCAN_RECEIVED';   msg: ScanReceivedMessage };
+  | { type: 'SCAN_RECEIVED';   msg: ScanReceivedMessage }
+  | { type: 'SESSION_UPDATED'; expiresAt?: string; maxUsers?: number | null };
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -72,8 +77,23 @@ function reducer(state: AppState, action: Action): AppState {
           port:         msg.port,
           pin:          msg.pin,
           oneTimeScan:  msg.oneTimeScan,
+          maxUsers:     msg.maxUsers,
           scanCount:    0,
           scanLog:      [],
+        },
+      };
+    }
+
+    case 'SESSION_UPDATED': {
+      if (state.status !== 'active') return state;
+      return {
+        ...state,
+        session: {
+          ...state.session,
+          ...(action.expiresAt && { expiresAt: new Date(action.expiresAt) }),
+          ...(action.maxUsers !== undefined && {
+            maxUsers: action.maxUsers === null ? undefined : action.maxUsers,
+          }),
         },
       };
     }
@@ -104,8 +124,8 @@ function reducer(state: AppState, action: Action): AppState {
 
 // ── Outbound helper ───────────────────────────────────────────────────────────
 
-function send(type: 'REQUEST_STOP' | 'REQUEST_COPY_URL' | 'REQUEST_OPEN_DASHBOARD') {
-  vscode.postMessage({ type });
+function sendMsg(msg: WebviewMessage) {
+  vscode.postMessage(msg);
 }
 
 // ── Flash button ─────────────────────────────────────────────────────────────
@@ -151,64 +171,43 @@ function Skeleton() {
   );
 }
 
-// Dot grid for the idle logo — 16×16 regular grid, radial mask fades toward center.
-const LOGO_DOTS: JSX.Element[] = [];
-for (let row = 0; row < 16; row++) {
-  for (let col = 0; col < 16; col++) {
-    LOGO_DOTS.push(
-      <circle key={`${row}-${col}`} cx={38 + col * 7} cy={38 + row * 7} r={1.3} />,
-    );
-  }
-}
-
 function IdleView() {
   return (
     <div className="pd-idle">
       <div className="pd-idle-logo">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="96" height="96" fill="none">
-          <defs>
-            <clipPath id="pd-inner-clip">
-              <circle cx="90" cy="90" r="60" />
-            </clipPath>
-            <radialGradient id="pd-mask-grad" cx="50%" cy="50%" r="50%">
-              <stop offset="0%"   stopColor="black" />
-              <stop offset="45%"  stopColor="black" />
-              <stop offset="100%" stopColor="white" />
-            </radialGradient>
-            <mask id="pd-dot-mask">
-              <circle cx="90" cy="90" r="60" fill="url(#pd-mask-grad)" />
-            </mask>
-          </defs>
-
-          {/* Outer ring */}
-          <circle cx="90" cy="90" r="82" stroke="#C48540" strokeWidth="2.5" />
-          {/* Inner ring */}
-          <circle cx="90" cy="90" r="62" fill="rgba(28,59,107,0.9)" stroke="#C48540" strokeWidth="1.8" />
-
-          {/* Dot grid — clipped to inner ring, fades toward center */}
-          <g clipPath="url(#pd-inner-clip)" mask="url(#pd-dot-mask)" fill="#C48540">
-            {LOGO_DOTS}
-          </g>
-
-          {/* Plug */}
-          <rect x="72" y="52" width="36" height="26" rx="4"
-            fill="#D4A853" fillOpacity="0.12" stroke="#D4A853" strokeWidth="1.8" />
-          <line x1="81" y1="78" x2="81" y2="90"
-            stroke="#D4A853" strokeWidth="2.6" strokeLinecap="round" />
-          <line x1="99" y1="78" x2="99" y2="90"
-            stroke="#D4A853" strokeWidth="2.6" strokeLinecap="round" />
-          <line x1="90" y1="90" x2="90" y2="96"
-            stroke="#C48540" strokeWidth="1.8" strokeDasharray="2.5,2.5" opacity="0.8" />
-          <rect x="67" y="97" width="46" height="28" rx="5"
-            fill="rgba(196,133,58,0.07)" stroke="#C48540" strokeWidth="1.8" />
-          <rect x="75"  y="102" width="12" height="16" rx="2.5" fill="#C48540" opacity="0.9" />
-          <rect x="93"  y="102" width="12" height="16" rx="2.5" fill="#C48540" opacity="0.9" />
-
-          {/* Cardinal rivets on outer ring */}
-          <circle cx="90"  cy="8"   r="3.5" fill="#C48540" opacity="0.7" />
-          <circle cx="172" cy="90"  r="3.5" fill="#C48540" opacity="0.7" />
-          <circle cx="90"  cy="172" r="3.5" fill="#C48540" opacity="0.7" />
-          <circle cx="8"   cy="90"  r="3.5" fill="#C48540" opacity="0.7" />
+        {/* Tricolor-denim logo — matches updated-logo/extracted/tricolor-denim-master.svg */}
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="-100 -100 200 200" width="96" height="96">
+          {/* Outer tricolor arc */}
+          <path d="M 0,-69 A 69,69 0 0,1 59.76,34.5" fill="none" stroke="#10b981" strokeWidth="1.8" strokeLinecap="round"/>
+          <path d="M 59.76,34.5 A 69,69 0 0,1 -59.76,34.5" fill="none" stroke="#eab308" strokeWidth="1.8" strokeLinecap="round"/>
+          <path d="M -59.76,34.5 A 69,69 0 0,1 0,-69" fill="none" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round"/>
+          <circle cx="0" cy="-69" r="3" fill="#10b981"/>
+          <circle cx="59.76" cy="34.5" r="3" fill="#eab308"/>
+          <circle cx="-59.76" cy="34.5" r="3" fill="#ef4444"/>
+          {/* Navy disc */}
+          <circle cx="0" cy="0" r="58" fill="#1C3B6B"/>
+          {/* Inner dashed tricolor ring */}
+          <path d="M 0,-58 A 58,58 0 0,1 50.23,29" fill="none" stroke="#10b981" strokeWidth="1.0" strokeDasharray="6,4" strokeLinecap="round" opacity="0.85"/>
+          <path d="M 50.23,29 A 58,58 0 0,1 -50.23,29" fill="none" stroke="#eab308" strokeWidth="1.0" strokeDasharray="6,4" strokeLinecap="round" opacity="0.85"/>
+          <path d="M -50.23,29 A 58,58 0 0,1 0,-58" fill="none" stroke="#ef4444" strokeWidth="1.0" strokeDasharray="6,4" strokeLinecap="round" opacity="0.85"/>
+          <circle cx="0" cy="-58" r="2" fill="#10b981"/>
+          <circle cx="50.23" cy="29" r="2" fill="#eab308"/>
+          <circle cx="-50.23" cy="29" r="2" fill="#ef4444"/>
+          {/* Plug body */}
+          <rect x="-20" y="-42" width="40" height="30" rx="4" fill="none" stroke="#10b981" strokeWidth="1.5"/>
+          {/* Prongs */}
+          <line x1="-10" y1="-12" x2="-10" y2="4" stroke="#eab308" strokeWidth="2.5" strokeLinecap="round"/>
+          <line x1="10" y1="-12" x2="10" y2="4" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round"/>
+          <line x1="0" y1="4" x2="0" y2="10" stroke="#10b981" strokeWidth="1.5" strokeDasharray="2,2" opacity="0.6"/>
+          {/* Socket */}
+          <rect x="-26" y="10" width="52" height="30" rx="6" fill="none" stroke="#10b981" strokeWidth="1.5"/>
+          <rect x="-14" y="17" width="12" height="16" rx="2" fill="#eab308" opacity="0.85"/>
+          <rect x="2" y="17" width="12" height="16" rx="2" fill="#ef4444" opacity="0.85"/>
+          {/* Corner rivets */}
+          <circle cx="58" cy="-58" r="2.5" fill="#C48540" opacity="0.65"/>
+          <circle cx="58" cy="58" r="2.5" fill="#C48540" opacity="0.65"/>
+          <circle cx="-58" cy="58" r="2.5" fill="#C48540" opacity="0.65"/>
+          <circle cx="-58" cy="-58" r="2.5" fill="#C48540" opacity="0.65"/>
         </svg>
         <span className="pd-wordmark">PortDrop</span>
       </div>
@@ -237,6 +236,31 @@ function ActiveView({ session }: { session: ActiveSession }) {
         </div>
       )}
 
+      {/* ── Admin controls ──────────────────────────────────────────────── */}
+      <div className="pd-admin">
+        <div className="pd-admin-row">
+          <span className="pd-admin-label">TTL</span>
+          <button className="pd-adj-btn" onClick={() => sendMsg({ type: 'REQUEST_ADJUST_TTL', deltaMs: -15 * 60_000 })}>−15m</button>
+          <button className="pd-adj-btn" onClick={() => sendMsg({ type: 'REQUEST_ADJUST_TTL', deltaMs: 15 * 60_000 })}>+15m</button>
+          <button className="pd-adj-btn" onClick={() => sendMsg({ type: 'REQUEST_ADJUST_TTL', deltaMs: 60 * 60_000 })}>+1h</button>
+        </div>
+        {!session.oneTimeScan && (
+          <div className="pd-admin-row">
+            <span className="pd-admin-label">Cap</span>
+            {session.maxUsers !== undefined && session.maxUsers > 1 && (
+              <button className="pd-adj-btn" onClick={() => sendMsg({ type: 'REQUEST_UPDATE_USERS', maxUsers: session.maxUsers! - 1 })}>−1</button>
+            )}
+            <span className="pd-admin-val">{session.maxUsers ?? '∞'}</span>
+            {(session.maxUsers === undefined || session.maxUsers < SYSTEM_MAX_USERS) && (
+              <button className="pd-adj-btn" onClick={() => sendMsg({ type: 'REQUEST_UPDATE_USERS', maxUsers: (session.maxUsers ?? 0) + 1 })}>+1</button>
+            )}
+            {session.maxUsers !== undefined && (
+              <button className="pd-adj-btn" onClick={() => sendMsg({ type: 'REQUEST_UPDATE_USERS', maxUsers: undefined })}>∞</button>
+            )}
+          </div>
+        )}
+      </div>
+
       <SessionConfig
         port={session.port}
         ttl={session.ttl}
@@ -251,21 +275,21 @@ function ActiveView({ session }: { session: ActiveSession }) {
           label="Copy URL"
           flashLabel="&#x2713; Copied!"
           duration={1500}
-          onClick={() => send('REQUEST_COPY_URL')}
+          onClick={() => sendMsg({ type: 'REQUEST_COPY_URL' })}
         />
         <FlashButton
           className="pd-btn"
           label="Open in Browser"
           flashLabel="&#x2197; Opening..."
           duration={1000}
-          onClick={() => send('REQUEST_OPEN_DASHBOARD')}
+          onClick={() => sendMsg({ type: 'REQUEST_OPEN_DASHBOARD' })}
         />
         <FlashButton
           className="pd-btn danger"
           label="Stop Session"
           flashLabel="&#x23F9; Stopping..."
           duration={2000}
-          onClick={() => send('REQUEST_STOP')}
+          onClick={() => sendMsg({ type: 'REQUEST_STOP' })}
         />
       </div>
     </div>
@@ -304,6 +328,9 @@ export default function App() {
         case 'SCAN_RECEIVED':
           dispatch({ type: 'SCAN_RECEIVED', msg });
           break;
+        case 'SESSION_UPDATED':
+          dispatch({ type: 'SESSION_UPDATED', expiresAt: msg.expiresAt, maxUsers: msg.maxUsers });
+          break;
       }
     };
 
@@ -314,10 +341,20 @@ export default function App() {
     };
   }, []);
 
-  switch (state.status) {
-    case 'loading': return <Skeleton />;
-    case 'idle':    return <IdleView />;
-    case 'active':  return <ActiveView session={state.session} />;
-    case 'expired': return <ExpiredView />;
-  }
+  if (state.status === 'loading') return <Skeleton />;
+
+  const view = (() => {
+    switch (state.status) {
+      case 'idle':    return <IdleView />;
+      case 'active':  return <ActiveView session={state.session} />;
+      case 'expired': return <ExpiredView />;
+    }
+  })();
+
+  return (
+    <>
+      {view}
+      <CodeBreederBadge />
+    </>
+  );
 }

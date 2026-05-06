@@ -14,9 +14,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { CodeBreederBadge } from '../components/CodeBreederBadge';
 
 export default function HomePage() {
-  const [showBtt, setShowBtt] = useState(false);
+  const [showBtt,     setShowBtt]     = useState(false);
+  const [footerFaded, setFooterFaded] = useState(false);
 
   useEffect(() => {
     // BTT scroll listener
@@ -46,10 +48,17 @@ export default function HomePage() {
     );
     document.querySelectorAll('[data-enter]').forEach((el) => observer.observe(el));
 
+    // On mobile/small screens the footer fades out after 30 s to reclaim space
+    let footerTimer: ReturnType<typeof setTimeout> | undefined;
+    if (window.matchMedia('(max-width:880px)').matches) {
+      footerTimer = setTimeout(() => setFooterFaded(true), 30_000);
+    }
+
     return () => {
       window.removeEventListener('scroll', onScroll);
       observer.disconnect();
       document.documentElement.classList.remove('js-ready');
+      clearTimeout(footerTimer);
     };
   }, []);
 
@@ -61,47 +70,7 @@ export default function HomePage() {
         {/* NAV */}
         <nav className="pd-nav">
           <div className="pd-brand">
-            {/* Double-ring mini logo — updated design */}
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="28" height="28" fill="none">
-              <circle cx="100" cy="100" r="94"   stroke="#C48540" strokeWidth="10"/>
-              <circle cx="100" cy="100" r="80.5" fill="rgba(28,59,107,0.92)" stroke="#C48540" strokeWidth="6"/>
-              {/* r≈50, 8 dots — full opacity */}
-              <circle cx="150" cy="100" r="5" fill="#C48540"/>
-              <circle cx="135" cy="135" r="5" fill="#C48540"/>
-              <circle cx="100" cy="150" r="5" fill="#C48540"/>
-              <circle cx="65"  cy="135" r="5" fill="#C48540"/>
-              <circle cx="50"  cy="100" r="5" fill="#C48540"/>
-              <circle cx="65"  cy="65"  r="5" fill="#C48540"/>
-              <circle cx="100" cy="50"  r="5" fill="#C48540"/>
-              <circle cx="135" cy="65"  r="5" fill="#C48540"/>
-              {/* r≈35, 6 dots — mid opacity */}
-              <circle cx="135" cy="100" r="4" fill="#C48540" opacity="0.52"/>
-              <circle cx="118" cy="130" r="4" fill="#C48540" opacity="0.52"/>
-              <circle cx="82"  cy="130" r="4" fill="#C48540" opacity="0.52"/>
-              <circle cx="65"  cy="100" r="4" fill="#C48540" opacity="0.52"/>
-              <circle cx="82"  cy="70"  r="4" fill="#C48540" opacity="0.52"/>
-              <circle cx="118" cy="70"  r="4" fill="#C48540" opacity="0.52"/>
-              {/* r≈20, 4 dots — faint */}
-              <circle cx="120" cy="100" r="3.5" fill="#C48540" opacity="0.18"/>
-              <circle cx="100" cy="120" r="3.5" fill="#C48540" opacity="0.18"/>
-              <circle cx="80"  cy="100" r="3.5" fill="#C48540" opacity="0.18"/>
-              <circle cx="100" cy="80"  r="3.5" fill="#C48540" opacity="0.18"/>
-              <rect x="60" y="40" width="80" height="26" rx="14"
-                fill="#D4A853" fillOpacity="0.14" stroke="#D4A853" strokeWidth="7"/>
-              <line x1="76"  y1="66" x2="76"  y2="84" stroke="#D4A853" strokeWidth="11" strokeLinecap="round"/>
-              <line x1="124" y1="66" x2="124" y2="84" stroke="#D4A853" strokeWidth="11" strokeLinecap="round"/>
-              <line x1="100" y1="92" x2="100" y2="100" stroke="#C48540" strokeWidth="7" strokeDasharray="12,10" opacity="0.85"/>
-              <rect x="54" y="108" width="92" height="36" rx="20"
-                fill="rgba(196,133,58,0.08)" stroke="#C48540" strokeWidth="7"/>
-              <rect x="66"  y="116" width="18" height="20" rx="10" fill="#C48540" opacity="0.92"/>
-              <rect x="116" y="116" width="18" height="20" rx="10" fill="#C48540" opacity="0.92"/>
-              <circle cx="100" cy="100" r="80.5" fill="none" stroke="#C48540" strokeWidth="6"/>
-              {/* Cardinal rivets */}
-              <circle cx="100" cy="6"   r="6" fill="#C48540" opacity="0.65"/>
-              <circle cx="194" cy="100" r="6" fill="#C48540" opacity="0.65"/>
-              <circle cx="100" cy="194" r="6" fill="#C48540" opacity="0.65"/>
-              <circle cx="6"   cy="100" r="6" fill="#C48540" opacity="0.65"/>
-            </svg>
+            <img src="/logo/portdrop-navbar.svg" alt="PortDrop" width={28} height={28} />
             <span className="pd-brand-name">PortDrop</span>
           </div>
           <div className="pd-nav-links">
@@ -153,54 +122,8 @@ export default function HomePage() {
           {/* RIGHT: hero logo */}
           <div className="pd-stage">
             <div className="pd-stage-frame">
-              <svg className="pd-logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
-                <defs>
-                  <clipPath id="hero-inner-clip">
-                    <circle cx="90" cy="90" r="60"/>
-                  </clipPath>
-                  <radialGradient id="hero-mask-grad" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%"   stopColor="black"/>
-                    <stop offset="45%"  stopColor="black"/>
-                    <stop offset="100%" stopColor="white"/>
-                  </radialGradient>
-                  <mask id="hero-dot-mask">
-                    <circle cx="90" cy="90" r="60" fill="url(#hero-mask-grad)"/>
-                  </mask>
-                </defs>
-
-                {/* Outer ring */}
-                <circle cx="90" cy="90" r="82" fill="none" stroke="#C48540" strokeWidth="2.5"/>
-                {/* Inner ring */}
-                <circle cx="90" cy="90" r="62" fill="rgba(28,59,107,0.9)" stroke="#C48540" strokeWidth="1.8"/>
-
-                {/* Dot grid — clipped to inner ring, fades toward center */}
-                <g clipPath="url(#hero-inner-clip)" mask="url(#hero-dot-mask)" fill="#C48540">
-                  {Array.from({ length: 16 }, (_, row) =>
-                    Array.from({ length: 16 }, (_, col) => (
-                      <circle key={`${row}-${col}`} cx={38 + col * 7} cy={38 + row * 7} r={1.3} />
-                    ))
-                  )}
-                </g>
-
-                {/* Plug */}
-                <rect x="72" y="52" width="36" height="26" rx="4"
-                  fill="#D4A853" fillOpacity="0.12" stroke="#D4A853" strokeWidth="1.8"/>
-                <line x1="81" y1="78" x2="81" y2="90" stroke="#D4A853" strokeWidth="2.6" strokeLinecap="round"/>
-                <line x1="99" y1="78" x2="99" y2="90" stroke="#D4A853" strokeWidth="2.6" strokeLinecap="round"/>
-                <line x1="90" y1="90" x2="90" y2="96"
-                  stroke="#C48540" strokeWidth="1.8" strokeDasharray="2.5,2.5" opacity="0.8"/>
-                <rect x="67" y="97" width="46" height="28" rx="5"
-                  fill="rgba(196,133,58,0.07)" stroke="#C48540" strokeWidth="1.8"/>
-                <rect x="75"  y="102" width="12" height="16" rx="2.5" fill="#C48540" opacity="0.9"/>
-                <rect x="93"  y="102" width="12" height="16" rx="2.5" fill="#C48540" opacity="0.9"/>
-
-                {/* Cardinal rivets */}
-                <circle cx="90"  cy="8"   r="3.5" fill="#C48540" opacity="0.7"/>
-                <circle cx="172" cy="90"  r="3.5" fill="#C48540" opacity="0.7"/>
-                <circle cx="90"  cy="172" r="3.5" fill="#C48540" opacity="0.75"/>
-                <circle cx="8"   cy="90"  r="3.5" fill="#C48540" opacity="0.75"/>
-              </svg>
-              <div className="pd-stage-spec">double ring · denim weave · v0.1</div>
+              <img className="pd-logo-svg" src="/logo/portdrop-master.svg" alt="PortDrop" />
+              <div className="pd-stage-spec">tricolor denim · v0.1</div>
             </div>
           </div>
         </section>
@@ -386,12 +309,9 @@ export default function HomePage() {
         </div>{/* end pd-sections-wrap */}
 
         {/* FOOTER */}
-        <footer className="pd-footer">
+        <footer className={`pd-footer${footerFaded ? ' pd-footer--faded' : ''}`}>
           <div>© 2026 · PortDrop</div>
-          <div className="pd-footer-by">
-            <span style={{opacity:'0.5'}}>crafted by</span>
-            <span style={{color:'#D4A853'}}>CodeBreeder</span>
-          </div>
+          <CodeBreederBadge />
         </footer>
       </div>
 

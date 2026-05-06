@@ -7,105 +7,87 @@
  * GitHub   : https://github.com/frandycode
  * Email    : frandyslueue@gmail.com
  * Location : Tulsa, OK & Dallas, TX (Central Time)
- * Project  : PortDrop — viewer session page, app preview and code view tabs
+ * Project  : PortDrop — viewer session page, launch portal
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
 import { notFound } from 'next/navigation';
-import { AppPreview } from '@/components/AppPreview';
-import { PortDropBadge } from '@/components/PortDropBadge';
-import { TTLCountdown } from '@/components/TTLCountdown';
-import { PinGate } from '@/components/PinGate';
+import { PinGate }       from '@/components/PinGate';
+import { SessionLaunch } from '@/components/SessionLaunch';
 import { validateSession } from '@/lib/session';
+import { FiUsers, FiZap } from 'react-icons/fi';
 
 interface SessionPageProps {
   params: { sessionId: string };
 }
 
-function LogoMark() {
+function BlockedView({ icon, headline, body }: { icon: React.ReactNode; headline: string; body: string }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none">
-      <circle cx="12" cy="12" r="11" stroke="#C48540" strokeWidth="1.2"/>
-      <circle cx="12" cy="12" r="7.8" fill="rgba(13,30,56,0.95)" stroke="#C48540" strokeWidth="0.9"/>
-      {/* r≈6, 8 dots — full opacity */}
-      <circle cx="18.0" cy="12.0" r="0.65" fill="#C48540"/>
-      <circle cx="16.2" cy="16.2" r="0.65" fill="#C48540"/>
-      <circle cx="12.0" cy="18.0" r="0.65" fill="#C48540"/>
-      <circle cx="7.8"  cy="16.2" r="0.65" fill="#C48540"/>
-      <circle cx="6.0"  cy="12.0" r="0.65" fill="#C48540"/>
-      <circle cx="7.8"  cy="7.8"  r="0.65" fill="#C48540"/>
-      <circle cx="12.0" cy="6.0"  r="0.65" fill="#C48540"/>
-      <circle cx="16.2" cy="7.8"  r="0.65" fill="#C48540"/>
-      {/* r≈4.2, 6 dots — mid opacity */}
-      <circle cx="16.2" cy="12.0" r="0.60" fill="#C48540" opacity="0.52"/>
-      <circle cx="14.1" cy="15.6" r="0.60" fill="#C48540" opacity="0.52"/>
-      <circle cx="9.9"  cy="15.6" r="0.60" fill="#C48540" opacity="0.52"/>
-      <circle cx="7.8"  cy="12.0" r="0.60" fill="#C48540" opacity="0.52"/>
-      <circle cx="9.9"  cy="8.4"  r="0.60" fill="#C48540" opacity="0.52"/>
-      <circle cx="14.1" cy="8.4"  r="0.60" fill="#C48540" opacity="0.52"/>
-      {/* r≈2.4, 4 dots — faint */}
-      <circle cx="14.4" cy="12.0" r="0.55" fill="#C48540" opacity="0.18"/>
-      <circle cx="12.0" cy="14.4" r="0.55" fill="#C48540" opacity="0.18"/>
-      <circle cx="9.6"  cy="12.0" r="0.55" fill="#C48540" opacity="0.18"/>
-      <circle cx="12.0" cy="9.6"  r="0.55" fill="#C48540" opacity="0.18"/>
-      <rect x="8.8" y="5.8" width="6.4" height="4.2" rx="0.7" fill="#D4A853" fillOpacity="0.14" stroke="#D4A853" strokeWidth="0.7"/>
-      <line x1="10.4" y1="10.0" x2="10.4" y2="12.1" stroke="#D4A853" strokeWidth="0.95" strokeLinecap="round"/>
-      <line x1="13.6" y1="10.0" x2="13.6" y2="12.1" stroke="#D4A853" strokeWidth="0.95" strokeLinecap="round"/>
-      <line x1="12" y1="12.1" x2="12" y2="13.2" stroke="#C48540" strokeWidth="0.65" strokeDasharray="0.9,0.9" opacity="0.85"/>
-      <rect x="8.2" y="13.2" width="7.6" height="5.0" rx="0.8" fill="rgba(196,133,58,0.09)" stroke="#C48540" strokeWidth="0.7"/>
-      <rect x="9.2"  y="14.1" width="2.3" height="3.2" rx="0.4" fill="#C48540" fillOpacity="0.92"/>
-      <rect x="12.5" y="14.1" width="2.3" height="3.2" rx="0.4" fill="#C48540" fillOpacity="0.92"/>
-      <circle cx="12.0" cy="1.0"  r="0.8" fill="#C48540" opacity="0.65"/>
-      <circle cx="23.0" cy="12.0" r="0.8" fill="#C48540" opacity="0.65"/>
-      <circle cx="12.0" cy="23.0" r="0.8" fill="#C48540" opacity="0.65"/>
-      <circle cx="1.0"  cy="12.0" r="0.8" fill="#C48540" opacity="0.65"/>
-    </svg>
+    <main className="jeans-stonewash jeans-stitch" style={{
+      minHeight: '100vh', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '24px', fontFamily: 'var(--font-geist-mono), monospace',
+    }}>
+      <div style={{
+        width: '100%', maxWidth: 360,
+        background: 'rgba(15,23,42,0.85)',
+        border: '1px solid #1e293b', borderRadius: 24,
+        padding: '40px 36px', backdropFilter: 'blur(20px)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20,
+        boxShadow: '0 32px 80px rgba(0,0,0,0.5)',
+      }}>
+        <a href="/" style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:10, textDecoration:'none', opacity:0.9 }}>
+          <img src="/logo/portdrop-favicon-32.svg" alt="PortDrop" width={48} height={48} />
+          <span style={{ fontSize:11, letterSpacing:'0.25em', textTransform:'uppercase', color:'#22d3ee', fontWeight:600 }}>PortDrop</span>
+        </a>
+        <div style={{ width:'100%', height:1, background:'#1e293b' }} />
+        <div style={{
+          width:44, height:44, borderRadius:14,
+          background:'rgba(196,133,58,0.1)', border:'1px solid rgba(196,133,58,0.28)',
+          display:'flex', alignItems:'center', justifyContent:'center', color:'#C48540',
+        }}>{icon}</div>
+        <h1 style={{ fontSize:15, fontWeight:700, color:'#D4A853', letterSpacing:'0.15em', textTransform:'uppercase', margin:0, textAlign:'center' }}>
+          {headline}
+        </h1>
+        <p style={{ fontSize:11, color:'#64748b', letterSpacing:'0.05em', margin:0, textAlign:'center', lineHeight:1.7 }}>
+          {body}
+        </p>
+      </div>
+    </main>
   );
 }
 
 export default async function SessionPage({ params }: SessionPageProps) {
   const result = await validateSession(params.sessionId);
 
-  if (result.type === 'not-found') notFound();
+  if (result.type === 'not-found')   notFound();
   if (result.type === 'pin-required') return <PinGate sessionId={params.sessionId} />;
 
-  const session = result.data;
-  const displayUrl = session.publicUrl.replace(/^https?:\/\//, '');
+  if (result.type === 'one-time-burned') return (
+    <BlockedView
+      icon={<FiZap size={20} />}
+      headline="Link Already Used"
+      body="This was a one-time link. It has already been opened and cannot be used again. Ask the developer for a new session."
+    />
+  );
+
+  if (result.type === 'capacity-full') return (
+    <BlockedView
+      icon={<FiUsers size={20} />}
+      headline="Session Full"
+      body="This session has reached its viewer limit. Ask the developer to increase the limit or start a new session."
+    />
+  );
+
+  const { data: session } = result;
 
   return (
-    <main className="relative flex min-h-screen flex-col bg-portdrop-bg">
-      <header className="flex items-center justify-between border-b border-portdrop-border bg-portdrop-surface/60 px-5 py-2.5 backdrop-blur-sm">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <LogoMark />
-          <span className="font-mono text-sm font-semibold tracking-widest text-portdrop-cyan uppercase">
-            PortDrop
-          </span>
-          <span className="hidden sm:block text-portdrop-border font-mono">·</span>
-          <span
-            className="hidden sm:block font-mono text-[10px] text-portdrop-muted truncate max-w-[260px]"
-            title={session.publicUrl}
-          >
-            {displayUrl}
-          </span>
-          {session.oneTimeScan && (
-            <span className="hidden sm:flex items-center gap-1 rounded border border-[#eab308]/30 bg-[#eab308]/10 px-2 py-0.5 font-mono text-[9px] font-semibold tracking-widest text-[#eab308] uppercase">
-              ⚡ One-time link
-            </span>
-          )}
-        </div>
-        <TTLCountdown expiresAt={session.expiresAt} />
-      </header>
-
-      <div className="flex flex-1 overflow-hidden">
-        <AppPreview tunnelUrl={session.publicUrl} expiresAt={session.expiresAt} />
-        {/* TODO (Phase 2): CodeView tab rendered here when session.codeViewEnabled */}
-      </div>
-
-      <PortDropBadge
-        expiresAt={session.expiresAt}
-        scanCount={session.scanCount}
-        oneTimeScan={session.oneTimeScan}
-      />
-    </main>
+    <SessionLaunch
+      sessionId={session.sessionId}
+      publicUrl={session.publicUrl}
+      expiresAt={session.expiresAt}
+      scanCount={session.scanCount}
+      oneTimeScan={session.oneTimeScan}
+    />
   );
 }

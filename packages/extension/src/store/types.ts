@@ -15,6 +15,9 @@ export type TTLOption = '15m' | '1h' | '4h';
 
 export type SessionStatus = 'active' | 'expired' | 'stopped';
 
+/** Hard system ceiling — no session may exceed this viewer count. */
+export const SYSTEM_MAX_USERS = 10;
+
 export interface SessionRecord {
   /** Unique session ID — nanoid, URL-safe */
   sessionId: string;
@@ -51,6 +54,19 @@ export interface SessionRecord {
 
   /** SHA-256 hex hash of the 4-digit PIN; undefined = no PIN required */
   pinHash?: string;
+
+  /**
+   * Max number of distinct viewers allowed. Undefined = unlimited (up to
+   * SYSTEM_MAX_USERS). Ignored when oneTimeScan is true (implicitly 1).
+   */
+  maxUsers?: number;
+
+  /**
+   * Set to true after a one-time-scan link is successfully consumed.
+   * Keeps the record alive so callers can distinguish "burned" from "wrong PIN".
+   * The TTL timer still cleans up the record normally.
+   */
+  burned?: boolean;
 }
 
 /** Public-safe projection sent to the dashboard — no internal fields */
@@ -61,4 +77,16 @@ export interface PublicSession {
   codeViewEnabled: boolean;
   oneTimeScan: boolean;
   scanCount: number;
+  maxUsers?: number;
+}
+
+/** Discriminated result returned by SessionStore.access() */
+export type AccessResult =
+  | { ok: true;  data: PublicSession }
+  | { ok: false; reason: 'not_found' | 'wrong_pin' | 'one_time_burned' | 'capacity_full' };
+
+/** Payload emitted by SessionStore on the 'updated' event */
+export interface SessionUpdate {
+  expiresAt?: Date;
+  maxUsers?:  number | null; // null = cap removed (unlimited)
 }

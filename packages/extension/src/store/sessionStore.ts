@@ -13,7 +13,7 @@
 
 import { EventEmitter } from 'events';
 import { randomBytes, createHash } from 'crypto';
-import { SessionRecord, PublicSession, TTLOption } from './types';
+import { SessionRecord, PublicSession, AccessResult, SessionUpdate, TTLOption, SYSTEM_MAX_USERS } from './types';
 
 // ── TTL map ───────────────────────────────────────────────────────────────────
 
@@ -29,6 +29,7 @@ export type StoreEvents = EventEmitter & {
   on(event: 'expired', listener: (sessionId: string) => void): StoreEvents;
   on(event: 'stopped', listener: (sessionId: string) => void): StoreEvents;
   on(event: 'scanned', listener: (sessionId: string, count: number, at: Date) => void): StoreEvents;
+  on(event: 'updated', listener: (sessionId: string, update: SessionUpdate) => void): StoreEvents;
 };
 
 // ── SessionStore ──────────────────────────────────────────────────────────────
@@ -76,10 +77,18 @@ export class SessionStore extends EventEmitter {
     oneTimeScan: boolean;
     codeViewEnabled: boolean;
     pin?: string;
+    maxUsers?: number;
   }): SessionRecord {
     const sessionId = this.generateId();
     const startedAt = new Date();
     const expiresAt = new Date(startedAt.getTime() + (params.customMs ?? TTL_MS[params.ttl]));
+
+    // Clamp caller-supplied maxUsers to the system ceiling; ignore for one-time-scan
+    const maxUsers = params.oneTimeScan
+      ? undefined
+      : params.maxUsers !== undefined
+        ? Math.min(Math.max(1, params.maxUsers), SYSTEM_MAX_USERS)
+        : undefined;
 
     const record: SessionRecord = {
       sessionId,
@@ -94,6 +103,7 @@ export class SessionStore extends EventEmitter {
       status:          'active',
       scanCount:       0,
       pinHash:         params.pin ? createHash('sha256').update(params.pin).digest('hex') : undefined,
+      maxUsers,
     };
 
     this.sessions.set(sessionId, record);
@@ -125,36 +135,92 @@ export class SessionStore extends EventEmitter {
   /**
    * Returns the public projection of an active session and increments the scan
    * count. Pass the raw 4-digit PIN when the session is PIN-protected.
-   * Returns null if: session not found/expired, PIN is wrong, or one-time link burned.
+   *
+   * Returns a discriminated AccessResult so callers can distinguish failure
+   * reasons (wrong PIN vs. already claimed vs. session full vs. not found).
    */
-  access(sessionId: string, pin?: string): PublicSession | null {
+  access(sessionId: string, pin?: string): AccessResult {
     const record = this.sessions.get(sessionId);
 
-    if (!record || record.status !== 'active') return null;
-    if (new Date() >= record.expiresAt)         return null;
+    if (!record || record.status !== 'active') return { ok: false, reason: 'not_found' };
+    if (new Date() >= record.expiresAt)         return { ok: false, reason: 'not_found' };
+
+    // Already burned by a previous one-time-scan access
+    if (record.burned) return { ok: false, reason: 'one_time_burned' };
 
     // PIN verification
     if (record.pinHash) {
-      if (!pin) return null;
+      if (!pin) return { ok: false, reason: 'wrong_pin' };
       const inputHash = createHash('sha256').update(pin).digest('hex');
       if (inputHash !== record.pinHash) {
         console.log(`[PortDrop:Store] Wrong PIN for session: ${sessionId}`);
-        return null;
+        return { ok: false, reason: 'wrong_pin' };
       }
     }
 
-    // One-time-scan burn
+    // One-time-scan — mark burned but keep record alive so the next caller
+    // sees 'one_time_burned' instead of a confusing 'not_found'.
+    // The TTL timer still cleans up the record on schedule.
     if (record.oneTimeScan && record.scanCount >= 1) {
       console.log(`[PortDrop:Store] One-time session burned: ${sessionId}`);
-      this.expire(sessionId);
-      return null;
+      record.burned = true;
+      return { ok: false, reason: 'one_time_burned' };
+    }
+
+    // Max-user cap
+    if (record.maxUsers !== undefined && record.scanCount >= record.maxUsers) {
+      console.log(`[PortDrop:Store] Session full (${record.scanCount}/${record.maxUsers}): ${sessionId}`);
+      return { ok: false, reason: 'capacity_full' };
     }
 
     record.scanCount += 1;
     this.emit('scanned', sessionId, record.scanCount, new Date());
     console.log(`[PortDrop:Store] Session accessed: ${sessionId} (scans: ${record.scanCount})`);
 
-    return this.toPublic(record);
+    return { ok: true, data: this.toPublic(record) };
+  }
+
+  // ── Admin updates ─────────────────────────────────────────────────────────
+
+  /**
+   * Updates the max-viewer cap on a live session.
+   * Pass undefined to remove the cap entirely.
+   * Returns false if the session is not found or not active.
+   */
+  updateMaxUsers(sessionId: string, newMax: number | undefined): boolean {
+    const record = this.sessions.get(sessionId);
+    if (!record || record.status !== 'active') return false;
+
+    record.maxUsers = newMax !== undefined
+      ? Math.min(Math.max(1, newMax), SYSTEM_MAX_USERS)
+      : undefined;
+
+    this.emit('updated', sessionId, { maxUsers: record.maxUsers ?? null });
+    console.log(`[PortDrop:Store] maxUsers updated: ${sessionId} → ${record.maxUsers ?? '∞'}`);
+    return true;
+  }
+
+  /**
+   * Shifts the session expiry by deltaMs (positive = extend, negative = shrink).
+   * Clamped: minimum 60s remaining, maximum 4h from now.
+   * Returns false if the session is not found or not active.
+   */
+  adjustTTL(sessionId: string, deltaMs: number): boolean {
+    const record = this.sessions.get(sessionId);
+    if (!record || record.status !== 'active') return false;
+
+    const now = Date.now();
+    const min = now + 60_000;
+    const max = now + 4 * 60 * 60_000;
+    const raw = record.expiresAt.getTime() + deltaMs;
+    record.expiresAt = new Date(Math.max(min, Math.min(max, raw)));
+
+    this.clearTimer(sessionId);
+    this.scheduleExpiry(sessionId, record.expiresAt);
+
+    this.emit('updated', sessionId, { expiresAt: record.expiresAt });
+    console.log(`[PortDrop:Store] TTL adjusted: ${sessionId} → ${record.expiresAt.toISOString()}`);
+    return true;
   }
 
   /** Lists all currently active sessions (for status bar / sidebar). */
@@ -228,6 +294,7 @@ export class SessionStore extends EventEmitter {
       codeViewEnabled: record.codeViewEnabled,
       oneTimeScan:     record.oneTimeScan,
       scanCount:       record.scanCount,
+      maxUsers:        record.maxUsers,
     };
   }
 }

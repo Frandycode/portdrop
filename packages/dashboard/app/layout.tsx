@@ -19,7 +19,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'PortDrop',
   description: 'Share your running app. You control the window. You control the clock.',
-  icons: { icon: '/favicon.ico' },
+  icons: { icon: '/favicon.svg' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
