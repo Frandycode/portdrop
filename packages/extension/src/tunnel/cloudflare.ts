@@ -87,7 +87,10 @@ export function startTunnel(binaryPath: string, port: number): Promise<TunnelRes
 
     // ── Timeout guard ───────────────────────────────────────────────────────
     const timer = setTimeout(() => {
-      cleanup(`no URL received within ${STARTUP_TIMEOUT_MS / 1000}s`);
+      cleanup(
+        `no URL received in ${STARTUP_TIMEOUT_MS / 1000}s — ` +
+        'check your internet connection and try again',
+      );
       stopTunnel(proc);
     }, STARTUP_TIMEOUT_MS);
 
@@ -116,7 +119,10 @@ export function startTunnel(binaryPath: string, port: number): Promise<TunnelRes
 
     proc.on('close', (code) => {
       if (!resolved) {
-        cleanup(`process exited with code ${code}`);
+        cleanup(
+          `cloudflared exited (code ${code}) before the tunnel was ready — ` +
+          'make sure nothing is blocking outbound connections',
+        );
       } else {
         // Tunnel was running but dropped — notify callers
         emitter.emit('close', code);

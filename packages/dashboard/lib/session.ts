@@ -26,6 +26,7 @@ export type SessionResult =
   | { type: 'pin-required';    sessionId: string }
   | { type: 'capacity-full' }
   | { type: 'one-time-burned' }
+  | { type: 'relay-down' }
   | { type: 'not-found' };
 
 /**
@@ -48,6 +49,7 @@ export async function validateSession(
     if (!res.ok) {
       if (res.status === 410) return { type: 'one-time-burned' };
       if (res.status === 403) return { type: 'capacity-full' };
+      if (res.status === 503) return { type: 'relay-down' };
       return { type: 'not-found' };
     }
 
@@ -72,6 +74,6 @@ export async function validateSession(
     };
   } catch (err) {
     console.error('[PortDrop:validateSession] Failed:', err);
-    return { type: 'not-found' };
+    return { type: 'relay-down' };
   }
 }

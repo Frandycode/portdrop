@@ -15,13 +15,20 @@ import { notFound } from 'next/navigation';
 import { PinGate }       from '@/components/PinGate';
 import { SessionLaunch } from '@/components/SessionLaunch';
 import { validateSession } from '@/lib/session';
-import { FiUsers, FiZap } from 'react-icons/fi';
+import { FiUsers, FiZap, FiPower } from 'react-icons/fi';
 
 interface SessionPageProps {
   params: { sessionId: string };
 }
 
-function BlockedView({ icon, headline, body }: { icon: React.ReactNode; headline: string; body: string }) {
+function BlockedView({
+  icon, headline, body, action,
+}: {
+  icon:     React.ReactNode;
+  headline: string;
+  body:     string;
+  action?:  React.ReactNode;
+}) {
   return (
     <main className="jeans-stonewash jeans-stitch" style={{
       minHeight: '100vh', display: 'flex', flexDirection: 'column',
@@ -52,6 +59,7 @@ function BlockedView({ icon, headline, body }: { icon: React.ReactNode; headline
         <p style={{ fontSize:11, color:'#64748b', letterSpacing:'0.05em', margin:0, textAlign:'center', lineHeight:1.7 }}>
           {body}
         </p>
+        {action}
       </div>
     </main>
   );
@@ -62,6 +70,35 @@ export default async function SessionPage({ params }: SessionPageProps) {
 
   if (result.type === 'not-found')   notFound();
   if (result.type === 'pin-required') return <PinGate sessionId={params.sessionId} />;
+
+  if (result.type === 'relay-down') return (
+    <BlockedView
+      icon={<FiPower size={20} />}
+      headline="Extension Not Running"
+      body="PortDrop is not active in VS Code. Ask the developer to open VS Code and start a new session, then try again."
+      action={
+        <a
+          href={`/s/${params.sessionId}`}
+          style={{
+            display: 'inline-block',
+            marginTop: 4,
+            padding: '8px 22px',
+            borderRadius: 10,
+            border: '1px solid rgba(196,133,58,0.35)',
+            background: 'rgba(196,133,58,0.08)',
+            color: '#D4A853',
+            fontSize: 11,
+            letterSpacing: '0.15em',
+            textTransform: 'uppercase',
+            textDecoration: 'none',
+            fontFamily: 'var(--font-geist-mono), monospace',
+          }}
+        >
+          Try Again
+        </a>
+      }
+    />
+  );
 
   if (result.type === 'one-time-burned') return (
     <BlockedView
