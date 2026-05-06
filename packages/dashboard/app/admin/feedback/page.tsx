@@ -13,6 +13,7 @@
 
 import { Redis } from '@upstash/redis';
 import { AdminShell } from '@/components/AdminShell';
+import { FeedbackPanel } from '@/components/FeedbackPanel';
 
 const redis = new Redis({
   url:   process.env.UPSTASH_REDIS_REST_URL!,
@@ -32,8 +33,7 @@ async function readFeedback(): Promise<FeedbackEntry[]> {
 function avgStars(entries: FeedbackEntry[]): string {
   const rated = entries.filter(e => typeof e.stars === 'number');
   if (!rated.length) return '—';
-  const avg = rated.reduce((s, e) => s + (e.stars ?? 0), 0) / rated.length;
-  return avg.toFixed(1);
+  return (rated.reduce((s, e) => s + (e.stars ?? 0), 0) / rated.length).toFixed(1);
 }
 
 export default async function FeedbackPage() {
@@ -71,42 +71,7 @@ export default async function FeedbackPage() {
         )}
       </div>
 
-      {entries.length === 0 ? (
-        <p style={{ color: 'rgba(212,168,83,0.3)', fontSize: 12, letterSpacing: '0.05em' }}>
-          No feedback yet.
-        </p>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {entries.map((e, i) => (
-            <div key={i} style={{
-              padding: '14px 16px',
-              borderRadius: 10,
-              border: '1px solid #1e293b',
-              background: 'rgba(255,255,255,0.015)',
-              display: 'flex', flexDirection: 'column', gap: 8,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                {typeof e.stars === 'number' ? (
-                  <span style={{ fontSize: 14, letterSpacing: 2 }}>
-                    {'★'.repeat(e.stars)}{'☆'.repeat(5 - e.stars)}
-                  </span>
-                ) : (
-                  <span style={{ fontSize: 10, color: '#475569', letterSpacing: '0.05em' }}>No rating</span>
-                )}
-                <span style={{ fontSize: 10, color: '#475569', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
-                  {new Date(e.ts).toLocaleString('en-US', {
-                    month: 'short', day: 'numeric', year: 'numeric',
-                    hour: 'numeric', minute: '2-digit',
-                  })}
-                </span>
-              </div>
-              <p style={{ margin: 0, fontSize: 12, color: '#cbd5e1', lineHeight: 1.6, letterSpacing: '0.02em' }}>
-                {e.text}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
+      <FeedbackPanel entries={entries} />
     </AdminShell>
   );
 }
