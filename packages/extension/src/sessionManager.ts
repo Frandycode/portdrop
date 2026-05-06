@@ -120,12 +120,17 @@ export class SessionManager {
     }
 
     // ── Pick TTL ────────────────────────────────────────────────────────────
+    const defaultTTL = vscode.workspace.getConfiguration('portdrop').get<string>('defaultTTL', '1h');
+    const ttlItems: { label: string; ttl: TTLOption | 'custom' }[] = [
+      { label: '$(clock) 15 minutes', ttl: '15m' },
+      { label: '$(clock) 1 hour',     ttl: '1h'  },
+      { label: '$(clock) 4 hours',    ttl: '4h'  },
+      { label: '$(edit) Custom...',   ttl: 'custom' },
+    ];
     const ttlPick = await vscode.window.showQuickPick(
       [
-        { label: '$(clock) 15 minutes', ttl: '15m' as TTLOption | 'custom' },
-        { label: '$(clock) 1 hour',     ttl: '1h'  as TTLOption | 'custom' },
-        { label: '$(clock) 4 hours',    ttl: '4h'  as TTLOption | 'custom' },
-        { label: '$(edit) Custom...',   ttl: 'custom' as TTLOption | 'custom' },
+        ...ttlItems.filter(i => i.ttl === defaultTTL),
+        ...ttlItems.filter(i => i.ttl !== defaultTTL),
       ],
       { title: 'PortDrop — How long should this session last?' },
     );

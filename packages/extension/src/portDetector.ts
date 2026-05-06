@@ -23,13 +23,14 @@ export class PortDetector {
    * and returns the selected port number — or undefined if cancelled.
    */
   async pickPort(): Promise<number | undefined> {
+    const defaultPort = vscode.workspace.getConfiguration('portdrop').get<number>('defaultPort', 3000);
     const open = await this.scanPorts(CANDIDATE_PORTS);
 
     if (open.length === 0) {
       const manual = await vscode.window.showInputBox({
         title: 'PortDrop — No dev servers detected',
         prompt: 'Enter the port your app is running on',
-        placeHolder: '3000',
+        placeHolder: String(defaultPort),
         validateInput: (v) => (isNaN(Number(v)) ? 'Must be a number' : null),
       });
       return manual ? Number(manual) : undefined;
@@ -40,6 +41,13 @@ export class PortDetector {
       description: this.guessFramework(p),
       port: p,
     }));
+
+    // Float the default port to the top if it was detected
+    items.sort((a, b) => {
+      if (a.port === defaultPort) return -1;
+      if (b.port === defaultPort) return 1;
+      return 0;
+    });
 
     const picked = await vscode.window.showQuickPick(items, {
       title: 'PortDrop — Select a running dev server',

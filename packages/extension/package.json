@@ -96,6 +96,11 @@
     "configuration": {
       "title": "PortDrop",
       "properties": {
+        "portdrop.defaultPort": {
+          "type": "number",
+          "default": 3000,
+          "description": "Default port to pre-select when starting a session."
+        },
         "portdrop.defaultTTL": {
           "type": "string",
           "default": "1h",
