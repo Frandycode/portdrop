@@ -18,7 +18,8 @@ export type ExtensionMessage =
   | SessionStoppedMessage
   | SessionExpiredMessage
   | ScanReceivedMessage
-  | SessionUpdatedMessage;
+  | SessionUpdatedMessage
+  | RelayErrorMessage;
 
 export interface SessionStartedMessage {
   type:         'SESSION_STARTED';
@@ -45,6 +46,11 @@ export interface SessionStoppedMessage {
 
 export interface SessionExpiredMessage {
   type: 'SESSION_EXPIRED';
+}
+
+export interface RelayErrorMessage {
+  type:    'RELAY_ERROR';
+  message: string;
 }
 
 export interface ScanReceivedMessage {

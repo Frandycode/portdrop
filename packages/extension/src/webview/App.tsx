@@ -49,7 +49,8 @@ type AppState =
   | { status: 'loading' }
   | { status: 'idle' }
   | { status: 'active'; session: ActiveSession }
-  | { status: 'expired' };
+  | { status: 'expired' }
+  | { status: 'relay-error'; message: string };
 
 type Action =
   | { type: 'LOADED_IDLE' }
@@ -57,7 +58,8 @@ type Action =
   | { type: 'SESSION_STOPPED' }
   | { type: 'SESSION_EXPIRED' }
   | { type: 'SCAN_RECEIVED';   msg: ScanReceivedMessage }
-  | { type: 'SESSION_UPDATED'; expiresAt?: string; maxUsers?: number | null };
+  | { type: 'SESSION_UPDATED'; expiresAt?: string; maxUsers?: number | null }
+  | { type: 'RELAY_ERROR';     message: string };
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -103,6 +105,9 @@ function reducer(state: AppState, action: Action): AppState {
 
     case 'SESSION_EXPIRED':
       return { status: 'expired' };
+
+    case 'RELAY_ERROR':
+      return { status: 'relay-error', message: action.message };
 
     case 'SCAN_RECEIVED': {
       if (state.status !== 'active') return state;
@@ -304,6 +309,16 @@ function ExpiredView() {
   );
 }
 
+function RelayErrorView({ message }: { message: string }) {
+  return (
+    <div className="pd-relay-error">
+      <p>&#x26A0; Relay failed to start.</p>
+      <p className="pd-relay-error-detail">{message}</p>
+      <p className="pd-relay-error-hint">Reload VS Code to try again.</p>
+    </div>
+  );
+}
+
 // ── Root ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -331,6 +346,10 @@ export default function App() {
         case 'SESSION_UPDATED':
           dispatch({ type: 'SESSION_UPDATED', expiresAt: msg.expiresAt, maxUsers: msg.maxUsers });
           break;
+        case 'RELAY_ERROR':
+          clearTimeout(timer);
+          dispatch({ type: 'RELAY_ERROR', message: msg.message });
+          break;
       }
     };
 
@@ -345,9 +364,10 @@ export default function App() {
 
   const view = (() => {
     switch (state.status) {
-      case 'idle':    return <IdleView />;
-      case 'active':  return <ActiveView session={state.session} />;
-      case 'expired': return <ExpiredView />;
+      case 'idle':        return <IdleView />;
+      case 'active':      return <ActiveView session={state.session} />;
+      case 'expired':     return <ExpiredView />;
+      case 'relay-error': return <RelayErrorView message={state.message} />;
     }
   })();
 

@@ -58,6 +58,7 @@ export class SessionManager {
   private scanListener:    ((id: string, count: number, at: Date) => void) | null = null;
   private updateListener:  ((id: string, update: { expiresAt?: Date; maxUsers?: number | null }) => void) | null = null;
   private stoppingIntentionally = false;
+  private relayError: string | null = null;
 
   constructor(
     private readonly context: vscode.ExtensionContext,
@@ -88,6 +89,10 @@ export class SessionManager {
     // Handles: opening sidebar after a session started, and returning to it
     // after navigating to another activity bar panel.
     sidebar.onViewReady(() => {
+      if (this.relayError) {
+        sidebar.post({ type: 'RELAY_ERROR', message: this.relayError });
+        return;
+      }
       if (!this.state.active || !this.currentSessionId) return;
       sidebar.post({
         type:        'SESSION_STARTED',
@@ -428,5 +433,10 @@ export class SessionManager {
 
   getState(): Readonly<SessionState> {
     return this.state;
+  }
+
+  notifyRelayError(message: string): void {
+    this.relayError = message;
+    this.sidebar.post({ type: 'RELAY_ERROR', message });
   }
 }

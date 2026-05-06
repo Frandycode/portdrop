@@ -45,8 +45,9 @@ export function activate(context: vscode.ExtensionContext): void {
   });
 
   // ── Start local relay server ───────────────────────────────────────────────
-  startRelay().catch((err) => {
+  startRelay().catch((err: Error) => {
     vscode.window.showErrorMessage(`[PortDrop] Relay failed to start: ${err.message}`);
+    session.notifyRelayError(err.message);
   });
 
   // ── Commands ──────────────────────────────────────────────────────────────
@@ -74,9 +75,9 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(startCmd, stopCmd, openDashboardCmd, copyUrlCmd, statusBar);
 }
 
-export function deactivate(): void {
-  session?.stop();
+export async function deactivate(): Promise<void> {
+  await session?.stop();
   sessionStore.clear();
-  stopRelay();
+  await stopRelay();
   console.log('[PortDrop] Extension deactivated.');
 }

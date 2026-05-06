@@ -104,6 +104,10 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     .pd-skel-title{width:90px;height:12px;margin-top:4px}
     .pd-skel-text{width:140px;height:10px}
     .pd-skel-text.short{width:100px}
+    .pd-relay-error{display:flex;flex-direction:column;align-items:center;gap:10px;padding:32px 16px;text-align:center}
+    .pd-relay-error p{color:#ef4444;font-size:13px;line-height:1.5}
+    .pd-relay-error-detail{font-size:10px;color:#94a3b8;font-family:monospace;word-break:break-all;max-width:200px}
+    .pd-relay-error-hint{font-size:10px;color:#475569}
   </style>
 </head>
 <body>
