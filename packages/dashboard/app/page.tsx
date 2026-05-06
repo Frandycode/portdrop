@@ -78,6 +78,7 @@ export default function HomePage() {
             <a href="#how">How it works</a>
             <a href="#docs">Docs</a>
             <a href="#changelog">Changelog</a>
+            <a href="/roadmap">Roadmap</a>
           </div>
           <button className="pd-nav-cta" onClick={() => window.open('https://marketplace.visualstudio.com/items?itemName=codebreeder.portdrop','_blank')}>Install <span className="pd-nav-arrow">→</span></button>
         </nav>
@@ -109,6 +110,9 @@ export default function HomePage() {
                 <span className="pd-nav-arrow" style={{fontSize:'16px',lineHeight:'1'}}>→</span>
               </button>
               <button className="pd-btn-secondary" onClick={() => window.open('https://github.com/Frandycode/portdrop','_blank')}>View on GitHub</button>
+              <a href="/roadmap" style={{fontFamily:"'JetBrains Mono',monospace",fontSize:'11px',letterSpacing:'2px',textTransform:'uppercase',color:'rgba(212,168,83,0.55)',textDecoration:'none',whiteSpace:'nowrap'}}>
+                What&apos;s next →
+              </a>
             </div>
             <div className="pd-tag-strip">
               <span className="pd-tag"><span className="pd-tag-dot"/>Free &amp; Open Source</span>
@@ -311,6 +315,7 @@ export default function HomePage() {
         {/* FOOTER */}
         <footer className={`pd-footer${footerFaded ? ' pd-footer--faded' : ''}`}>
           <div>© 2026 · PortDrop</div>
+          <a href="/roadmap" style={{fontFamily:"'JetBrains Mono',monospace",fontSize:'10px',letterSpacing:'2px',color:'rgba(212,168,83,0.5)',textDecoration:'none',textTransform:'uppercase'}}>Roadmap</a>
           <CodeBreederBadge />
         </footer>
       </div>

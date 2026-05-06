@@ -530,6 +530,62 @@ html { scroll-behavior: smooth; }
   z-index: 50;
 }
 
+/* ── Roadmap ─────────────────────────────────────────────────────────────── */
+.pd-roadmap-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:40px;
+}
+.pd-rm-col{
+  border:1.5px dashed rgba(196,133,58,0.3);
+  border-radius:12px;padding:32px 28px;
+  background:rgba(196,133,58,0.05);
+}
+.pd-rm-col--v2{
+  opacity:0.6;
+  border-color:rgba(196,133,58,0.15);
+  background:rgba(196,133,58,0.02);
+}
+.pd-rm-col-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  letter-spacing:2.5px;text-transform:uppercase;color:#C48540;
+  border:1.5px dashed rgba(196,133,58,0.4);
+  padding:5px 12px;border-radius:4px;margin-bottom:24px;
+  background:rgba(196,133,58,0.07);
+}
+.pd-rm-col--v2 .pd-rm-col-badge{
+  color:rgba(196,133,58,0.5);
+  border-color:rgba(196,133,58,0.2);
+  background:rgba(196,133,58,0.03);
+}
+.pd-rm-col-title{
+  font-family:'Fjalla One',sans-serif;font-size:22px;
+  letter-spacing:0.5px;color:#D4A853;margin-bottom:24px;
+}
+.pd-rm-col--v2 .pd-rm-col-title{color:rgba(212,168,83,0.5);}
+.pd-rm-items{display:flex;flex-direction:column;gap:14px;}
+.pd-rm-item{
+  display:flex;align-items:center;gap:14px;
+  font-size:14px;color:rgba(212,168,83,0.8);font-weight:300;
+}
+.pd-rm-col--v2 .pd-rm-item{color:rgba(212,168,83,0.4);}
+.pd-rm-check{
+  width:22px;height:22px;border-radius:50%;flex-shrink:0;
+  background:rgba(196,133,58,0.15);
+  border:1.5px solid rgba(196,133,58,0.5);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;color:#D4A853;
+}
+.pd-rm-lock{
+  width:22px;height:22px;border-radius:50%;flex-shrink:0;
+  background:rgba(196,133,58,0.05);
+  border:1.5px dashed rgba(196,133,58,0.2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;color:rgba(196,133,58,0.3);
+}
+@media(max-width:700px){
+  .pd-roadmap-grid{grid-template-columns:1fr;}
+}
+
 /* ── Footer ──────────────────────────────────────────────────────────────── */
 .pd-footer{
   position:fixed;bottom:14px;left:14px;right:14px;z-index:55;
