@@ -128,6 +128,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
         expiresAt={session.expiresAt}
         scanCount={session.scanCount}
         oneTimeScan={session.oneTimeScan}
+        codeViewEnabled={session.codeViewEnabled}
       />
     </>
   );
