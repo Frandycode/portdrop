@@ -325,7 +325,8 @@ export default function HomePage() {
                   <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:'12px',color:'rgba(255,255,255,0.55)',lineHeight:'1.7'}}>
                     1. Download <a href="https://github.com/Frandycode/portdrop/releases" target="_blank" rel="noopener noreferrer" style={{color:'#D4A853',textDecoration:'none'}}>portdrop-0.1.0.vsix</a> from GitHub Releases<br/>
                     2. Open VS Code → Extensions panel (<code style={{color:'rgba(212,168,83,0.7)'}}>Ctrl+Shift+X</code>)<br/>
-                    3. Click <code style={{color:'rgba(212,168,83,0.7)'}}>···</code> → <strong style={{color:'rgba(255,255,255,0.7)'}}>Install from VSIX…</strong> → select the file
+                    3. Click <code style={{color:'rgba(212,168,83,0.7)'}}>···</code> → <strong style={{color:'rgba(255,255,255,0.7)'}}>Install from VSIX…</strong> → select the file<br/>
+                    <span style={{color:'rgba(239,68,68,0.7)',fontSize:'11px'}}>⚠ Windows: do not double-click the file — that opens Visual Studio, not VS Code.</span>
                   </div>
                 </div>
                 <div style={{width:'100%',height:'1px',background:'rgba(196,133,58,0.1)'}}/>
