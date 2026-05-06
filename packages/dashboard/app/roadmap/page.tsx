@@ -57,13 +57,11 @@ export default function RoadmapPage() {
           <a href="/roadmap" style={{ color: '#D4A853' }}>Roadmap</a>
         </div>
         <a
-          href="https://marketplace.visualstudio.com/items?itemName=codebreeder.portdrop"
-          target="_blank"
-          rel="noopener noreferrer"
+          href="/#docs"
           className="pd-nav-cta"
           style={{ textDecoration: 'none' }}
         >
-          Install <span className="pd-nav-arrow">→</span>
+          Install <span className="pd-nav-arrow">↓</span>
         </a>
       </nav>
 
@@ -127,13 +125,11 @@ export default function RoadmapPage() {
           </p>
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             <a
-              href="https://marketplace.visualstudio.com/items?itemName=codebreeder.portdrop"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/#docs"
               className="pd-btn-primary"
               style={{ textDecoration: 'none' }}
             >
-              Get V1 Free <span className="pd-nav-arrow" style={{ fontSize: 16 }}>→</span>
+              Install V1 <span className="pd-nav-arrow" style={{ fontSize: 16 }}>↓</span>
             </a>
             <a
               href="https://github.com/Frandycode/portdrop"

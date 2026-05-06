@@ -112,7 +112,9 @@ export default function HomePage() {
             <a href="#changelog">Changelog</a>
             <a href="/roadmap">Roadmap</a>
           </div>
-          <button className="pd-nav-cta" onClick={() => { posthog?.capture('cta_click', { cta: 'nav_install' }); window.open('https://marketplace.visualstudio.com/items?itemName=codebreeder.portdrop','_blank'); }}>Install <span className="pd-nav-arrow">→</span></button>
+          <a href="#docs" className="pd-nav-cta" onClick={() => posthog?.capture('cta_click', { cta: 'nav_install' })} style={{textDecoration:'none'}}>
+            Install <span className="pd-nav-arrow">↓</span>
+          </a>
         </nav>
 
         {/* HERO */}
@@ -137,14 +139,19 @@ export default function HomePage() {
               <em> localhost:</em> tabs or hunting through terminal scrollback.
             </p>
             <div className="pd-cta-row">
-              <button className="pd-btn-primary" onClick={() => { posthog?.capture('cta_click', { cta: 'hero_get_extension' }); window.open('https://marketplace.visualstudio.com/items?itemName=codebreeder.portdrop','_blank'); }}>
-                Get the Extension
-                <span className="pd-nav-arrow" style={{fontSize:'16px',lineHeight:'1'}}>→</span>
-              </button>
+              <a href="#docs" className="pd-btn-primary" onClick={() => posthog?.capture('cta_click', { cta: 'hero_get_extension' })} style={{textDecoration:'none',display:'inline-flex',alignItems:'center',gap:8}}>
+                Install v0.1
+                <span className="pd-nav-arrow" style={{fontSize:'16px',lineHeight:'1'}}>↓</span>
+              </a>
               <button className="pd-btn-secondary" onClick={() => { posthog?.capture('cta_click', { cta: 'hero_github' }); window.open('https://github.com/Frandycode/portdrop','_blank'); }}>View on GitHub</button>
               <a href="/roadmap" style={{fontFamily:"'JetBrains Mono',monospace",fontSize:'11px',letterSpacing:'2px',textTransform:'uppercase',color:'rgba(212,168,83,0.55)',textDecoration:'none',whiteSpace:'nowrap'}}>
                 What&apos;s next →
               </a>
+            </div>
+            <div style={{marginTop:'-4px',marginBottom:'4px',display:'flex',alignItems:'center',gap:8}}>
+              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:'10px',letterSpacing:'2px',color:'rgba(212,168,83,0.45)',textTransform:'uppercase'}}>
+                Marketplace listing arrives with V2
+              </span>
             </div>
             <div className="pd-tag-strip">
               <span className="pd-tag"><span className="pd-tag-dot"/>Free &amp; Open Source</span>
@@ -284,7 +291,7 @@ export default function HomePage() {
             <h2 className="pd-section-title">From zero to <span className="accent">shared</span><br/>in under a minute</h2>
             <div className="pd-steps">
               {[
-                { n:'01', name:'Install the extension', desc:'Grab PortDrop from the VS Code Marketplace. One click, no restart required.' },
+                { n:'01', name:'Install the extension', desc:'Download the .vsix from GitHub and install via VS Code: Extensions panel → ··· → Install from VSIX. Marketplace listing is coming with V2.' },
                 { n:'02', name:'Run PortDrop: Start Session', desc:'Open the command palette (Ctrl+Shift+P) and fire the command. PortDrop scans for running dev servers automatically.' },
                 { n:'03', name:'Pick your port', desc:'Select from the detected servers or type a port number manually. Works with any HTTP server.' },
                 { n:'04', name:'Set your time window', desc:'Choose 15 min, 1 hour, 4 hours, or enter a custom duration like 30m or 2h. The clock starts immediately.' },
@@ -305,6 +312,32 @@ export default function HomePage() {
           <section id="docs" className="pd-section">
             <div className="pd-section-eyebrow"><span className="pd-pulse"/>Reference</div>
             <h2 className="pd-section-title">Commands &amp; <span className="accent">config</span></h2>
+
+            {/* Install block */}
+            <div data-enter="up" style={{marginBottom:'40px',background:'rgba(196,133,58,0.04)',border:'1px solid rgba(196,133,58,0.18)',borderRadius:'14px',padding:'24px 28px'}}>
+              <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16}}>
+                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',color:'rgba(212,168,83,0.6)'}}>Installation · V1</span>
+                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:'10px',letterSpacing:'1px',color:'rgba(212,168,83,0.3)',padding:'2px 8px',border:'1px solid rgba(212,168,83,0.15)',borderRadius:'4px'}}>Marketplace listing coming with V2</span>
+              </div>
+              <div style={{display:'flex',flexDirection:'column',gap:14}}>
+                <div>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:'11px',color:'rgba(212,168,83,0.5)',letterSpacing:'1px',textTransform:'uppercase',marginBottom:6}}>Option A — VS Code UI</div>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:'12px',color:'rgba(255,255,255,0.55)',lineHeight:'1.7'}}>
+                    1. Download <a href="https://github.com/Frandycode/portdrop/releases" target="_blank" rel="noopener noreferrer" style={{color:'#D4A853',textDecoration:'none'}}>portdrop-0.1.0.vsix</a> from GitHub Releases<br/>
+                    2. Open VS Code → Extensions panel (<code style={{color:'rgba(212,168,83,0.7)'}}>Ctrl+Shift+X</code>)<br/>
+                    3. Click <code style={{color:'rgba(212,168,83,0.7)'}}>···</code> → <strong style={{color:'rgba(255,255,255,0.7)'}}>Install from VSIX…</strong> → select the file
+                  </div>
+                </div>
+                <div style={{width:'100%',height:'1px',background:'rgba(196,133,58,0.1)'}}/>
+                <div>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:'11px',color:'rgba(212,168,83,0.5)',letterSpacing:'1px',textTransform:'uppercase',marginBottom:6}}>Option B — Terminal</div>
+                  <div style={{background:'rgba(0,0,0,0.3)',borderRadius:'8px',padding:'10px 14px',fontFamily:"'JetBrains Mono',monospace",fontSize:'12px',color:'rgba(212,168,83,0.8)',letterSpacing:'0.5px'}}>
+                    code --install-extension portdrop-0.1.0.vsix
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="pd-docs-grid">
               <div data-enter="depth" style={{animationDelay:'0s'}}>
                 <div className="pd-docs-subtitle">Commands</div>
