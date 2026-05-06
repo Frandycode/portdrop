@@ -12,6 +12,8 @@
  */
 
 import * as http from 'http';
+import * as fs   from 'fs';
+import * as path from 'path';
 import { sessionStore } from '../store/sessionStore';
 
 /** Port the relay listens on — Next.js API route calls this */
@@ -120,6 +122,26 @@ function handleRequest(
     return;
   }
 
+  // ── GET /files?sessionId=X ────────────────────────────────────────────────
+  if (method === 'GET' && parsed.pathname === '/files') {
+    const sessionId = parsed.searchParams.get('sessionId') ?? '';
+    const record    = sessionStore.get(sessionId);
+
+    if (!record || record.status !== 'active' || !record.codeViewEnabled || !record.workspaceRoot) {
+      json(res, 404, { error: 'not_found' });
+      return;
+    }
+
+    try {
+      const tree = buildFileTree(record.workspaceRoot, record.workspaceRoot, record.blocklist);
+      json(res, 200, { tree });
+    } catch (err) {
+      console.error('[PortDrop:Relay] /files error:', err);
+      json(res, 500, { error: 'Failed to read workspace.' });
+    }
+    return;
+  }
+
   // ── 404 fallback ───────────────────────────────────────────────────────────
   json(res, 404, { error: 'Not found' });
 }
@@ -180,4 +202,57 @@ export { RELAY_PORT };
 function json(res: http.ServerResponse, status: number, body: object): void {
   res.writeHead(status);
   res.end(JSON.stringify(body));
+}
+
+// ── Code View helpers ─────────────────────────────────────────────────────────
+
+const DEFAULT_BLOCKLIST = new Set([
+  'node_modules', '.git', 'dist', '.next', 'out', 'build',
+  'coverage', '.turbo', '.vscode', '__pycache__', '.venv', 'venv',
+]);
+
+const BLOCKED_EXTENSIONS = new Set(['.key', '.pem', '.secret', '.p12', '.pfx']);
+
+function isBlocked(name: string, userBlocklist: string[]): boolean {
+  if (DEFAULT_BLOCKLIST.has(name)) return true;
+  if (name.startsWith('.env'))     return true;
+  const ext = path.extname(name).toLowerCase();
+  if (BLOCKED_EXTENSIONS.has(ext)) return true;
+  return userBlocklist.some((p) => name === p || name.startsWith(p));
+}
+
+export interface FileNode {
+  name: string;
+  path: string;
+  type: 'file' | 'directory';
+  children?: FileNode[];
+}
+
+function buildFileTree(root: string, dir: string, blocklist: string[]): FileNode[] {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  const nodes: FileNode[] = [];
+
+  for (const entry of entries) {
+    if (isBlocked(entry.name, blocklist)) continue;
+
+    const absPath = path.join(dir, entry.name);
+    const relPath = path.relative(root, absPath);
+
+    if (entry.isDirectory()) {
+      nodes.push({
+        name:     entry.name,
+        path:     relPath,
+        type:     'directory',
+        children: buildFileTree(root, absPath, blocklist),
+      });
+    } else if (entry.isFile()) {
+      nodes.push({ name: entry.name, path: relPath, type: 'file' });
+    }
+  }
+
+  // Directories first, then files — both alphabetically
+  return nodes.sort((a, b) => {
+    if (a.type !== b.type) return a.type === 'directory' ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
 }
