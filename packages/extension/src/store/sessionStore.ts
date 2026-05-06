@@ -78,6 +78,8 @@ export class SessionStore extends EventEmitter {
     codeViewEnabled: boolean;
     pin?: string;
     maxUsers?: number;
+    workspaceRoot?: string | null;
+    blocklist?: string[];
   }): SessionRecord {
     const sessionId = this.generateId();
     const startedAt = new Date();
@@ -104,6 +106,8 @@ export class SessionStore extends EventEmitter {
       scanCount:       0,
       pinHash:         params.pin ? createHash('sha256').update(params.pin).digest('hex') : undefined,
       maxUsers,
+      workspaceRoot:   params.codeViewEnabled ? (params.workspaceRoot ?? null) : null,
+      blocklist:       params.blocklist ?? [],
     };
 
     this.sessions.set(sessionId, record);

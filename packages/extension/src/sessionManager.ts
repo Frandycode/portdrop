@@ -261,6 +261,10 @@ export class SessionManager {
           this.stop();
         });
 
+        // Resolve workspace root and user blocklist for Code View
+        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? null;
+        const blocklist     = vscode.workspace.getConfiguration('portdrop').get<string[]>('blocklist', []);
+
         // Register with the session store — store owns TTL scheduling
         const record = sessionStore.create({
           publicUrl:       result.publicUrl, // raw tunnel URL — stored for the iframe
@@ -272,6 +276,8 @@ export class SessionManager {
           codeViewEnabled: false,
           pin,
           maxUsers,
+          workspaceRoot,
+          blocklist,
         });
 
         // Session URL is what gets shared — routes through the dashboard so the

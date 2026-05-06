@@ -67,6 +67,18 @@ export interface SessionRecord {
    * The TTL timer still cleans up the record normally.
    */
   burned?: boolean;
+
+  /**
+   * Absolute path to the workspace root on the developer's machine.
+   * Only set when codeViewEnabled is true; null otherwise.
+   */
+  workspaceRoot: string | null;
+
+  /**
+   * Additional glob/path patterns the developer wants excluded from Code View,
+   * merged with the relay's hard-coded default blocklist.
+   */
+  blocklist: string[];
 }
 
 /** Public-safe projection sent to the dashboard — no internal fields */
