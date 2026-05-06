@@ -37,6 +37,19 @@ export function activate(context: vscode.ExtensionContext): void {
 
   const detector = new PortDetector();
 
+  // ── First-run onboarding ──────────────────────────────────────────────────
+  if (!context.globalState.get('portdrop.onboarded')) {
+    context.globalState.update('portdrop.onboarded', true);
+    vscode.window.showInformationMessage(
+      "PortDrop ready — run 'PortDrop: Start Session' from the Command Palette to share a local port.",
+      'View Docs',
+    ).then((choice) => {
+      if (choice === 'View Docs') {
+        vscode.env.openExternal(vscode.Uri.parse('https://github.com/Frandycode/portdrop#readme'));
+      }
+    });
+  }
+
   // ── Preflight: resolve cloudflared in background on startup ──────────────
   // Resolved eagerly so the first "Start Session" feels instant.
   // Errors surface only when the user actually tries to start a session.
