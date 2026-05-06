@@ -16,10 +16,29 @@ import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 import './globals.css';
 
+const SITE_URL = 'https://portdrop.app';
+
 export const metadata: Metadata = {
-  title: 'PortDrop',
-  description: 'Share your running app. You control the window. You control the clock.',
+  title: 'PortDrop — Share your local app instantly',
+  description:
+    'Share a running local app with anyone in seconds. You control the window, the clock, and who gets in.',
+  metadataBase: new URL(SITE_URL),
+  alternates: { canonical: '/' },
   icons: { icon: '/favicon.svg' },
+  openGraph: {
+    type:        'website',
+    url:         SITE_URL,
+    siteName:    'PortDrop',
+    title:       'PortDrop — Share your local app instantly',
+    description: 'Share a running local app with anyone in seconds. You control the window, the clock, and who gets in.',
+    images: [{ url: '/logo/portdrop-master.svg', width: 1200, height: 630, alt: 'PortDrop' }],
+  },
+  twitter: {
+    card:        'summary_large_image',
+    title:       'PortDrop — Share your local app instantly',
+    description: 'Share a running local app with anyone in seconds. You control the window, the clock, and who gets in.',
+    images:      ['/logo/portdrop-master.svg'],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
