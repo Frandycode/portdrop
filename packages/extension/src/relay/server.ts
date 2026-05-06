@@ -136,9 +136,16 @@ export function startRelay(): Promise<void> {
   return new Promise((resolve, reject) => {
     server = http.createServer(handleRequest);
 
-    server.on('error', (err) => {
+    server.on('error', (err: NodeJS.ErrnoException) => {
       console.error(`[PortDrop:Relay] Server error: ${err.message}`);
-      reject(err);
+      if (err.code === 'EADDRINUSE') {
+        reject(new Error(
+          `Port ${RELAY_PORT} is already in use — another PortDrop instance may be running. ` +
+          `Restart VS Code to fix this.`,
+        ));
+      } else {
+        reject(err);
+      }
     });
 
     server.listen(RELAY_PORT, '127.0.0.1', () => {
