@@ -231,6 +231,21 @@ export class SessionManager {
       pin = pinInput;
     }
 
+    // ── Code View opt-in ────────────────────────────────────────────────────
+    const hasWorkspace = !!vscode.workspace.workspaceFolders?.length;
+    let codeViewEnabled = false;
+    if (hasWorkspace) {
+      const cvPick = await vscode.window.showQuickPick(
+        [
+          { label: '$(code)  Include code view — viewers can browse your files read-only', value: true  },
+          { label: '$(globe) App preview only — no code access',                           value: false },
+        ],
+        { title: 'PortDrop — Share code alongside the app?' },
+      );
+      if (!cvPick) return;
+      codeViewEnabled = cvPick.value;
+    }
+
     // ── Resolve binary ───────────────────────────────────────────────────────
     let binaryPath: string;
     try {
@@ -267,16 +282,16 @@ export class SessionManager {
 
         // Register with the session store — store owns TTL scheduling
         const record = sessionStore.create({
-          publicUrl:       result.publicUrl, // raw tunnel URL — stored for the iframe
-          qrDataUri:       '',
+          publicUrl: result.publicUrl, // raw tunnel URL — stored for the iframe
+          qrDataUri: '',
           port,
           ttl,
           customMs,
           oneTimeScan,
-          codeViewEnabled: false,
+          codeViewEnabled,
           pin,
           maxUsers,
-          workspaceRoot,
+          workspaceRoot: codeViewEnabled ? workspaceRoot : null,
           blocklist,
         });
 
@@ -335,7 +350,7 @@ export class SessionManager {
           qrDataUri,
           startedAt: record.startedAt,
           expiresAt: record.expiresAt,
-          config:    { port, ttl, oneTimeScan, codeViewEnabled: false },
+          config:    { port, ttl, oneTimeScan, codeViewEnabled },
           pin,
           maxUsers:  record.maxUsers,
         };
