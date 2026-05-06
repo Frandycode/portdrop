@@ -1,0 +1,22 @@
+/**
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Author   : Frandy Slueue
+ * Alias    : CodeBreeder
+ * Title    : Software Engineering · DevOps Security · IT Ops
+ * Portfolio: https://frandycode.dev
+ * GitHub   : https://github.com/frandycode
+ * Email    : frandyslueue@gmail.com
+ * Location : Tulsa, OK & Dallas, TX (Central Time)
+ * Project  : PortDrop — admin logout endpoint
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+import { NextResponse } from 'next/server';
+
+const COOKIE_NAME = 'portdrop_admin';
+
+export async function POST() {
+  const res = NextResponse.json({ ok: true });
+  res.cookies.set(COOKIE_NAME, '', { maxAge: 0, path: '/' });
+  return res;
+}
