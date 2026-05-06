@@ -11,14 +11,19 @@
     "url": "https://frandycode.dev"
   },
   "license": "MIT",
+  "homepage": "https://portdrop.app",
   "repository": {
     "type": "git",
-    "url": "https://github.com/frandycode/codebreeder-dev/portdrop"
+    "url": "https://github.com/Frandycode/portdrop"
+  },
+  "bugs": {
+    "url": "https://github.com/Frandycode/portdrop/issues"
   },
   "engines": {
     "vscode": "^1.89.0"
   },
   "categories": [
+    "Debuggers",
     "Other"
   ],
   "keywords": [
@@ -28,7 +33,10 @@
     "localhost",
     "preview",
     "ngrok",
-    "cloudflare"
+    "cloudflare",
+    "dev server",
+    "port sharing",
+    "remote preview"
   ],
   "icon": "assets/icon.png",
   "activationEvents": [
