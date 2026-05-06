@@ -13,12 +13,16 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CodeBreederBadge } from '../components/CodeBreederBadge';
 
 export default function HomePage() {
-  const [showBtt,     setShowBtt]     = useState(false);
-  const [footerFaded, setFooterFaded] = useState(false);
+  const [showBtt,       setShowBtt]       = useState(false);
+  const [footerFaded,   setFooterFaded]   = useState(false);
+  const [waitlistEmail, setWaitlistEmail] = useState('');
+  const [waitlistState, setWaitlistState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [waitlistMsg,   setWaitlistMsg]   = useState('');
+  const waitlistRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // BTT scroll listener
@@ -61,6 +65,31 @@ export default function HomePage() {
       clearTimeout(footerTimer);
     };
   }, []);
+
+  const submitWaitlist = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (waitlistState === 'loading') return;
+    setWaitlistState('loading');
+    try {
+      const res = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: waitlistEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setWaitlistState('error');
+        setWaitlistMsg(data.error ?? 'Something went wrong.');
+      } else {
+        setWaitlistState('success');
+        setWaitlistMsg("You're on the list. We'll reach out when V2 launches.");
+        setWaitlistEmail('');
+      }
+    } catch {
+      setWaitlistState('error');
+      setWaitlistMsg('Network error — please try again.');
+    }
+  };
 
   return (
     <>
@@ -121,6 +150,29 @@ export default function HomePage() {
               <span className="pd-tag-sep">·</span>
               <span className="pd-tag"><span className="pd-tag-dot"/>Cross-platform</span>
             </div>
+
+            {/* WAITLIST */}
+            {waitlistState !== 'success' ? (
+              <form onSubmit={submitWaitlist} className="pd-waitlist">
+                <input
+                  ref={waitlistRef}
+                  type="email"
+                  required
+                  className="pd-waitlist-input"
+                  placeholder="your@email.com"
+                  value={waitlistEmail}
+                  onChange={(e) => { setWaitlistEmail(e.target.value); setWaitlistState('idle'); }}
+                />
+                <button type="submit" className="pd-waitlist-btn" disabled={waitlistState === 'loading'}>
+                  {waitlistState === 'loading' ? '...' : 'Join V2 Waitlist'}
+                </button>
+                {waitlistState === 'error' && (
+                  <span className="pd-waitlist-msg pd-waitlist-msg--error">{waitlistMsg}</span>
+                )}
+              </form>
+            ) : (
+              <div className="pd-waitlist-success">{waitlistMsg}</div>
+            )}
           </div>
 
           {/* RIGHT: hero logo */}

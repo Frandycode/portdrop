@@ -530,6 +530,54 @@ html { scroll-behavior: smooth; }
   z-index: 50;
 }
 
+/* ── Waitlist ────────────────────────────────────────────────────────────── */
+.pd-waitlist{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  margin-top:28px;
+}
+.pd-waitlist-input{
+  font-family:'JetBrains Mono',monospace;font-size:12px;
+  letter-spacing:0.5px;color:#D4A853;
+  background:rgba(196,133,58,0.07);
+  border:1.5px dashed rgba(196,133,58,0.4);
+  border-radius:8px;padding:11px 16px;
+  outline:none;width:220px;
+  transition:border-color 0.2s,background 0.2s;
+}
+.pd-waitlist-input::placeholder{color:rgba(212,168,83,0.35);}
+.pd-waitlist-input:focus{
+  border-color:rgba(196,133,58,0.75);
+  background:rgba(196,133,58,0.11);
+}
+.pd-waitlist-btn{
+  font-family:'Fjalla One',sans-serif;font-size:12px;
+  letter-spacing:1.5px;text-transform:uppercase;
+  color:#0d1e38;background:#C48540;
+  border:none;padding:11px 18px;border-radius:8px;cursor:pointer;
+  box-shadow:0 2px 0 #7a4a20,0 4px 12px rgba(0,0,0,0.3);
+  transition:transform 0.1s,box-shadow 0.1s,opacity 0.15s;
+  white-space:nowrap;
+}
+.pd-waitlist-btn:hover:not(:disabled){
+  transform:translateY(-1px);
+  box-shadow:0 3px 0 #7a4a20,0 6px 14px rgba(0,0,0,0.35);
+}
+.pd-waitlist-btn:disabled{opacity:0.55;cursor:default;}
+.pd-waitlist-msg{
+  width:100%;font-family:'JetBrains Mono',monospace;
+  font-size:11px;letter-spacing:0.5px;
+}
+.pd-waitlist-msg--error{color:#ef4444;}
+.pd-waitlist-success{
+  margin-top:28px;
+  font-family:'JetBrains Mono',monospace;font-size:12px;
+  letter-spacing:1px;color:#D4A853;
+  border:1.5px dashed rgba(196,133,58,0.4);
+  border-radius:8px;padding:11px 16px;
+  background:rgba(196,133,58,0.07);
+  display:inline-block;
+}
+
 /* ── Roadmap ─────────────────────────────────────────────────────────────── */
 .pd-roadmap-grid{
   display:grid;grid-template-columns:1fr 1fr;gap:40px;
