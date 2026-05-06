@@ -145,6 +145,17 @@ export default function AdminLoginPage() {
             {loading ? 'Checking…' : 'Sign In'}
           </button>
         </form>
+
+        <div style={{ width:'100%', height:1, background:'#1e293b' }} />
+
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8 }}>
+          <a href="/admin/reset" style={{ fontSize:10, color:'rgba(212,168,83,0.45)', letterSpacing:'0.1em', textTransform:'uppercase', textDecoration:'none' }}>
+            Forgot password?
+          </a>
+          <a href="/admin/setup" style={{ fontSize:10, color:'rgba(34,211,238,0.35)', letterSpacing:'0.1em', textTransform:'uppercase', textDecoration:'none' }}>
+            First time? Create account
+          </a>
+        </div>
       </div>
     </main>
   );
