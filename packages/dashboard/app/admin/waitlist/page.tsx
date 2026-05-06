@@ -13,6 +13,7 @@
 
 import { Redis } from '@upstash/redis';
 import { AdminShell } from '@/components/AdminShell';
+import { WaitlistTable } from '@/components/WaitlistTable';
 
 const redis = new Redis({
   url:   process.env.UPSTASH_REDIS_REST_URL!,
@@ -61,45 +62,7 @@ export default async function WaitlistPage() {
         )}
       </div>
 
-      {entries.length === 0 ? (
-        <p style={{ color: 'rgba(212,168,83,0.3)', fontSize: 12, letterSpacing: '0.05em' }}>
-          No signups yet.
-        </p>
-      ) : (
-        <div style={{
-          border: '1px solid #1e293b', borderRadius: 12, overflow: 'hidden',
-        }}>
-          <div style={{
-            display: 'grid', gridTemplateColumns: '1fr auto',
-            padding: '8px 16px',
-            borderBottom: '1px solid #1e293b',
-            background: 'rgba(255,255,255,0.02)',
-            fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#475569',
-          }}>
-            <span>Email</span>
-            <span>Signed up</span>
-          </div>
-
-          {entries.map((e, i) => (
-            <div key={i} style={{
-              display: 'grid', gridTemplateColumns: '1fr auto',
-              padding: '10px 16px',
-              borderBottom: i < entries.length - 1 ? '1px solid #1e293b' : 'none',
-              background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)',
-              fontSize: 12,
-              alignItems: 'center',
-            }}>
-              <span style={{ color: '#cbd5e1', letterSpacing: '0.02em' }}>{e.email}</span>
-              <span style={{ color: '#475569', fontSize: 10, letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
-                {new Date(e.ts).toLocaleString('en-US', {
-                  month: 'short', day: 'numeric', year: 'numeric',
-                  hour: 'numeric', minute: '2-digit',
-                })}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+      <WaitlistTable entries={entries} />
     </AdminShell>
   );
 }
