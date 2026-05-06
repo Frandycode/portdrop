@@ -7,9 +7,13 @@
  * GitHub   : https://github.com/frandycode
  * Email    : frandyslueue@gmail.com
  * Location : Tulsa, OK & Dallas, TX (Central Time)
- * Project  : PortDrop — server-side session validation, calls relay via API route
+ * Project  : PortDrop — server-side session validation, reads from Upstash Redis
  * ─────────────────────────────────────────────────────────────────────────────
  */
+
+import { createHash } from 'crypto';
+import { redis } from './redis';
+import type { RedisSession } from '@/app/api/sessions/register/route';
 
 export interface SessionData {
   sessionId:       string;
@@ -22,58 +26,75 @@ export interface SessionData {
 }
 
 export type SessionResult =
-  | { type: 'ok';              data: SessionData }
-  | { type: 'pin-required';    sessionId: string }
+  | { type: 'ok';           data: SessionData }
+  | { type: 'pin-required'; sessionId: string }
+  | { type: 'wrong-pin';    sessionId: string }
   | { type: 'capacity-full' }
   | { type: 'one-time-burned' }
   | { type: 'relay-down' }
   | { type: 'not-found' };
 
-/**
- * Validates a session ID by calling the local API route, which proxies
- * to the PortDrop extension relay.
- *
- * Pass `pin` on a second call after the viewer enters their code.
- */
 export async function validateSession(
   sessionId: string,
   pin?: string,
 ): Promise<SessionResult> {
+  let session: RedisSession;
+
   try {
-    const url = pin
-      ? `http://localhost:3001/api/sessions/${sessionId}?pin=${encodeURIComponent(pin)}`
-      : `http://localhost:3001/api/sessions/${sessionId}`;
-
-    const res = await fetch(url, { cache: 'no-store' });
-
-    if (!res.ok) {
-      if (res.status === 410) return { type: 'one-time-burned' };
-      if (res.status === 403) return { type: 'capacity-full' };
-      if (res.status === 503) return { type: 'relay-down' };
-      return { type: 'not-found' };
-    }
-
-    const data = await res.json();
-
-    // Relay signals PIN gate — don't expose session data yet
-    if (data.pinRequired === true) {
-      return { type: 'pin-required', sessionId: data.sessionId ?? sessionId };
-    }
-
-    return {
-      type: 'ok',
-      data: {
-        sessionId:       data.sessionId,
-        publicUrl:       data.publicUrl,
-        expiresAt:       new Date(data.expiresAt),
-        codeViewEnabled: data.codeViewEnabled,
-        oneTimeScan:     data.oneTimeScan,
-        scanCount:       data.scanCount,
-        maxUsers:        data.maxUsers,
-      },
-    };
+    const raw = await redis.get(`session:${sessionId}`);
+    if (!raw) return { type: 'relay-down' };
+    session = (typeof raw === 'string' ? JSON.parse(raw) : raw) as RedisSession;
   } catch (err) {
-    console.error('[PortDrop:validateSession] Failed:', err);
+    console.error('[PortDrop:validateSession] Redis error:', err);
     return { type: 'relay-down' };
   }
+
+  if (session.status !== 'active') return { type: 'not-found' };
+  if (Date.now() >= new Date(session.expiresAt).getTime()) {
+    await redis.del(`session:${sessionId}`).catch(() => {});
+    return { type: 'not-found' };
+  }
+
+  // PIN gate
+  if (session.pinHash) {
+    if (!pin) return { type: 'pin-required', sessionId };
+    const inputHash = createHash('sha256').update(pin).digest('hex');
+    if (inputHash !== session.pinHash) return { type: 'wrong-pin', sessionId };
+  }
+
+  // One-time-scan already burned
+  if (session.burned) return { type: 'one-time-burned' };
+
+  // Burn on first access for one-time-scan
+  if (session.oneTimeScan && session.scanCount >= 1) {
+    await _updateSession(sessionId, { ...session, burned: true });
+    return { type: 'one-time-burned' };
+  }
+
+  // Viewer cap
+  if (session.maxUsers !== null && session.maxUsers !== undefined && session.scanCount >= session.maxUsers) {
+    return { type: 'capacity-full' };
+  }
+
+  // Increment scan count
+  const updated = { ...session, scanCount: session.scanCount + 1 };
+  await _updateSession(sessionId, updated);
+
+  return {
+    type: 'ok',
+    data: {
+      sessionId:       updated.sessionId,
+      publicUrl:       updated.publicUrl,
+      expiresAt:       new Date(updated.expiresAt),
+      codeViewEnabled: updated.codeViewEnabled,
+      oneTimeScan:     updated.oneTimeScan,
+      scanCount:       updated.scanCount,
+      maxUsers:        updated.maxUsers ?? undefined,
+    },
+  };
+}
+
+async function _updateSession(sessionId: string, session: RedisSession): Promise<void> {
+  const ttl = await redis.ttl(`session:${sessionId}`);
+  await redis.set(`session:${sessionId}`, JSON.stringify(session), { ex: Math.max(60, ttl) });
 }

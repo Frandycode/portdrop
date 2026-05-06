@@ -22,6 +22,8 @@ import { TTLOption, SYSTEM_MAX_USERS } from './store/types';
 import { SidebarProvider } from './webview/SidebarProvider';
 import { track } from './analytics';
 
+const DASHBOARD_URL = 'https://portdrop.app';
+
 export interface SessionConfig {
   port: number;
   ttl: TTLOption;
@@ -295,13 +297,32 @@ export class SessionManager {
           blocklist,
         });
 
-        // Session URL is what gets shared — routes through the dashboard so the
-        // relay can enforce PIN, scan count, and one-time-link burn.
-        // The raw tunnel URL (result.publicUrl) is kept only inside the relay store.
-        const sessionUrl = `http://localhost:3001/s/${record.sessionId}`;
+        // Session URL routes through the live dashboard — this is what gets shared.
+        // The raw tunnel URL is stored in Redis by the dashboard and never exposed.
+        const sessionUrl = `${DASHBOARD_URL}/s/${record.sessionId}`;
 
         // QR encodes the session URL, not the raw tunnel
         const qrDataUri  = await generateQRDataUri(sessionUrl);
+
+        // Register session with the live dashboard so it can be reached by anyone
+        try {
+          await fetch(`${DASHBOARD_URL}/api/sessions/register`, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId:       record.sessionId,
+              publicUrl:       result.publicUrl,
+              expiresAt:       record.expiresAt.toISOString(),
+              pinHash:         record.pinHash   ?? null,
+              oneTimeScan:     record.oneTimeScan,
+              maxUsers:        record.maxUsers   ?? null,
+              codeViewEnabled: record.codeViewEnabled,
+            }),
+          });
+        } catch (err) {
+          console.error('[PortDrop] Failed to register session with dashboard:', err);
+          vscode.window.showWarningMessage('[PortDrop] Could not reach portdrop.app — session may not be shareable remotely.');
+        }
         record.qrDataUri = qrDataUri;
 
         // React to store-driven expiry (TTL reached or one-time-scan burned)
@@ -427,8 +448,13 @@ export class SessionManager {
     }
 
     if (this.currentSessionId) {
-      sessionStore.stop(this.currentSessionId);
+      const stoppedId = this.currentSessionId;
+      sessionStore.stop(stoppedId);
       this.currentSessionId = null;
+      // Mark stopped in Redis so viewers get a clear "session ended" state
+      fetch(`${DASHBOARD_URL}/api/sessions/register?sessionId=${stoppedId}`, {
+        method: 'DELETE',
+      }).catch(() => {});
     }
 
     this.state = {

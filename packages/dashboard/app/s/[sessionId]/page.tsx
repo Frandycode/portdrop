@@ -70,7 +70,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
   const result = await validateSession(params.sessionId);
 
   if (result.type === 'not-found')   notFound();
-  if (result.type === 'pin-required') return <PinGate sessionId={params.sessionId} />;
+  if (result.type === 'pin-required' || result.type === 'wrong-pin') return <PinGate sessionId={params.sessionId} />;
 
   if (result.type === 'relay-down') return (
     <BlockedView
