@@ -1,86 +1,76 @@
 <!--
   Author   : Frandy Slueue
   Alias    : CodeBreeder
-  Title    : Software Engineering · DevOps Security · IT Ops
   Portfolio: https://frandycode.dev
-  GitHub   : https://github.com/frandycode
-  Email    : frandyslueue@gmail.com
-  Location : Tulsa, OK & Dallas, TX (Central Time)
-  Project  : PortDrop — project overview and build roadmap
+  Project  : PortDrop
 -->
 
 # PortDrop
 
-> **"You control the window. You control the clock."**
+Share a running local app with anyone in seconds — you control the window, the clock, and who gets in. No deploy, no ngrok fumbling, no lingering public URLs.
 
-A VS Code extension and browser dashboard that lets developers share a live running app — and optionally their live code — via a single QR code, with full control over access, visibility, and expiration.
-
----
-
-## What It Does
-
-One click in VS Code generates a QR code linked to your running local app. You configure exactly what the viewer sees and for how long — then kill it when you're done. No deploy. No ngrok fumbling. No lingering public URLs.
-
-| Pillar | What it does |
-|---|---|
-| **Share** | QR → live app preview with TTL |
-| **Debug** | QR → app preview + live read-only code view (Monaco) |
-| **Collab** *(Phase 2)* | Bidirectional editing over a shared session |
+Install the VS Code extension, pick a port, pick a time limit, and hand someone a QR code. The tunnel closes itself when you're done.
 
 ---
 
-## Monorepo Structure
+## Install
+
+**From the Marketplace** *(coming soon)*
+Search **PortDrop** in the VS Code Extensions panel, or:
 
 ```
-portdrop/
-├── packages/
-│   ├── extension/     # VS Code extension (TypeScript)
-│   ├── dashboard/     # Next.js viewer dashboard
-│   ├── relay/         # WebSocket relay server (Phase 2)
-│   └── api/           # FastAPI backend (Phase 2)
-├── infra/             # Docker Compose + Nginx
-├── scripts/           # Dev + packaging scripts
-└── .github/           # CI + marketplace publish workflows
+ext install codebreeder.portdrop
 ```
 
----
-
-## Getting Started
-
-> Requires Node >= 20, pnpm >= 9, Docker
+**From a .vsix**
+Download the latest release from [GitHub Releases](https://github.com/Frandycode/portdrop/releases) and run:
 
 ```bash
-# Install all dependencies
-pnpm install
-
-# Start all local services
-pnpm dev
+code --install-extension portdrop-0.1.0.vsix
 ```
 
 ---
 
-## Build Roadmap
+## Quick Start
 
-- **Phase 0** — Monorepo foundations *(current)*
-- **Phase 1** — MVP: Share (QR → live app)
-- **Phase 1.5** — Polish + VS Code marketplace publish
-- **Phase 2** — Debug Mode (live code view)
-- **Phase 3** — PortDrop Cloud (accounts, Pro tier)
-- **Phase 4** — Collab Mode
+1. Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
+2. Run **PortDrop: Start Session**
+3. Pick a running dev server port and a time window
+4. Share the URL or QR code from the sidebar — the session expires automatically
 
 ---
 
-## Tech Stack
+## Architecture
 
-| Layer | Tech |
-|---|---|
-| Extension | TypeScript, VS Code API, React (webview) |
-| Dashboard | Next.js 14, TypeScript, Tailwind CSS |
-| Tunnel | Cloudflare Tunnel (`cloudflared`) |
-| Relay | Node.js, WebSocket (`ws`) |
-| Backend | FastAPI, PostgreSQL 16, SQLAlchemy |
-| Infra | Docker, Nginx |
+```
+VS Code Extension
+      │
+      ▼
+Local Relay (port 49491)  ←─── Next.js Dashboard API
+      │
+      ▼
+Cloudflare Tunnel  ──►  Public HTTPS URL
+      │
+      ▼
+Viewer's browser
+```
+
+The extension starts a local HTTP relay and a Cloudflare tunnel. The Next.js dashboard handles session validation, PIN gates, viewer caps, and one-time links. No third-party accounts required.
 
 ---
 
-*Built by [Frandy Slueue](https://frandy.dev) · `portdrop.dev`*
+## Roadmap
+
+See [portdrop.app/roadmap](https://portdrop.app/roadmap) for what's shipped in V1 and what's coming in V2.
+
+---
+
+## Links
+
+- **Dashboard** — [portdrop.app](https://portdrop.app)
+- **Issues** — [github.com/Frandycode/portdrop/issues](https://github.com/Frandycode/portdrop/issues)
+- **Changelog** — [packages/extension/CHANGELOG.md](packages/extension/CHANGELOG.md)
+
+---
+
+*Built by [Frandy Slueue](https://frandycode.dev)*
