@@ -14,17 +14,20 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { FiExternalLink, FiZap, FiEye, FiClock, FiCopy, FiCheck, FiLock, FiRefreshCw } from 'react-icons/fi';
+import { FiExternalLink, FiZap, FiEye, FiClock, FiCopy, FiCheck, FiLock, FiRefreshCw, FiCode, FiMonitor } from 'react-icons/fi';
 import { TTLCountdown } from './TTLCountdown';
 import { CodeBreederBadge } from './CodeBreederBadge';
+import { FileTree } from './FileTree';
+import { CodeViewer } from './CodeViewer';
 
 interface SessionLaunchProps {
-  publicUrl:    string;
-  expiresAt:    Date;
-  scanCount:    number;
-  oneTimeScan:  boolean;
-  sessionId:    string;
-  pinProtected?: boolean;
+  publicUrl:        string;
+  expiresAt:        Date;
+  scanCount:        number;
+  oneTimeScan:      boolean;
+  sessionId:        string;
+  pinProtected?:    boolean;
+  codeViewEnabled?: boolean;
 }
 
 function LogoMark({ size = 32 }: { size?: number }) {
@@ -39,9 +42,12 @@ export function SessionLaunch({
   scanCount,
   oneTimeScan,
   sessionId,
-  pinProtected = false,
+  pinProtected     = false,
+  codeViewEnabled  = false,
 }: SessionLaunchProps) {
-  const [copied,        setCopied]        = useState(false);
+  const [tab,              setTab]              = useState<'preview' | 'code'>('preview');
+  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
+  const [copied,           setCopied]           = useState(false);
   const [liveExpiresAt, setLiveExpiresAt] = useState<Date>(expiresAt);
   const [expired,       setExpired]       = useState(() => expiresAt.getTime() <= Date.now());
   const [banner,        setBanner]        = useState<{ text: string; positive: boolean } | null>(null);
@@ -96,12 +102,96 @@ export function SessionLaunch({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const sharedStyle = `
+    @keyframes spin-slow { to { transform: rotate(360deg); } }
+    @keyframes pulse-dot { 0%,100% { opacity:1; } 50% { opacity:0.35; } }
+  `;
+
+  const tabBtn = (label: string, icon: React.ReactNode, value: 'preview' | 'code') => (
+    <button
+      onClick={() => setTab(value)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 5,
+        padding: '5px 14px', borderRadius: 8,
+        border: tab === value ? '1px solid rgba(196,133,58,0.5)' : '1px solid transparent',
+        background: tab === value ? 'rgba(196,133,58,0.1)' : 'none',
+        color: tab === value ? '#D4A853' : 'rgba(212,168,83,0.45)',
+        fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase',
+        cursor: 'pointer', fontFamily: 'var(--font-geist-mono), monospace',
+        transition: 'all 0.15s',
+      }}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+
+  if (tab === 'code' && codeViewEnabled) {
+    return (
+      <>
+        <style>{sharedStyle}</style>
+        <main style={{
+          height: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: '#0d1b33',
+          backgroundImage: [
+            'repeating-linear-gradient(150deg, rgba(255,255,255,0.013) 0px, rgba(255,255,255,0.013) 1px, transparent 1px, transparent 8px)',
+            'repeating-linear-gradient(60deg,  rgba(255,255,255,0.009) 0px, rgba(255,255,255,0.009) 1px, transparent 1px, transparent 8px)',
+          ].join(', '),
+          fontFamily: 'var(--font-geist-mono), monospace',
+          overflow: 'hidden',
+        }}>
+          {/* Code view header */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '10px 20px',
+            borderBottom: '1px solid #1e293b',
+            background: 'rgba(13,23,42,0.95)',
+            flexShrink: 0,
+          }}>
+            <a href="/" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none', opacity:0.85, flexShrink:0 }}>
+              <LogoMark size={24} />
+              <span style={{ fontSize:10, fontWeight:700, letterSpacing:'0.28em', textTransform:'uppercase', color:'#22d3ee' }}>PortDrop</span>
+            </a>
+            <div style={{ width:1, height:16, background:'#1e293b', flexShrink:0 }} />
+            <div style={{ display:'flex', gap:4 }}>
+              {tabBtn('Preview', <FiMonitor size={11} />, 'preview')}
+              {tabBtn('Code', <FiCode size={11} />, 'code')}
+            </div>
+            <div style={{ flex:1 }} />
+            <TTLCountdown expiresAt={liveExpiresAt} />
+          </div>
+
+          {/* Split panel */}
+          <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
+            {/* File tree sidebar */}
+            <div style={{
+              width: 240, flexShrink: 0,
+              borderRight: '1px solid #1e293b',
+              overflowY: 'auto',
+              background: 'rgba(13,23,42,0.6)',
+            }}>
+              <FileTree
+                sessionId={sessionId}
+                selectedPath={selectedFilePath}
+                onSelectFile={setSelectedFilePath}
+              />
+            </div>
+
+            {/* Code viewer */}
+            <div style={{ flex:1, overflow:'hidden', background:'rgba(13,23,42,0.4)' }}>
+              <CodeViewer sessionId={sessionId} filePath={selectedFilePath} />
+            </div>
+          </div>
+        </main>
+      </>
+    );
+  }
+
   return (
     <>
-      <style>{`
-        @keyframes spin-slow { to { transform: rotate(360deg); } }
-        @keyframes pulse-dot { 0%,100% { opacity:1; } 50% { opacity:0.35; } }
-      `}</style>
+      <style>{sharedStyle}</style>
 
       <main
         style={{
@@ -143,7 +233,7 @@ export function SessionLaunch({
           href="/"
           style={{
             display: 'flex', alignItems: 'center', gap: 10,
-            marginBottom: 40,
+            marginBottom: codeViewEnabled ? 16 : 40,
             textDecoration: 'none',
             opacity: 0.9,
             transition: 'opacity 0.15s',
@@ -162,6 +252,20 @@ export function SessionLaunch({
             PortDrop
           </span>
         </a>
+
+        {/* ── Tab switcher (only when code view is enabled) ─────────────────── */}
+        {codeViewEnabled && (
+          <div style={{
+            display: 'flex', gap: 4, marginBottom: 20,
+            padding: '4px',
+            borderRadius: 10,
+            border: '1px solid #1e293b',
+            background: 'rgba(13,23,42,0.6)',
+          }}>
+            {tabBtn('Preview', <FiMonitor size={11} />, 'preview')}
+            {tabBtn('Code', <FiCode size={11} />, 'code')}
+          </div>
+        )}
 
         {/* ── Status bar ────────────────────────────────────────────────────── */}
         <div style={{
