@@ -12,11 +12,12 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { appendFileSync, mkdirSync } from 'fs';
-import { join } from 'path';
+import { Redis } from '@upstash/redis';
 
-const DATA_DIR  = join(process.cwd(), 'data');
-const DATA_FILE = join(DATA_DIR, 'feedback.jsonl');
+const redis = new Redis({
+  url:   process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
 
 export async function POST(req: NextRequest) {
   let text: string;
@@ -39,13 +40,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    mkdirSync(DATA_DIR, { recursive: true });
-    appendFileSync(
-      DATA_FILE,
-      JSON.stringify({ text, stars, ts: new Date().toISOString() }) + '\n',
-    );
+    await redis.lpush('feedback', JSON.stringify({ text, stars, ts: new Date().toISOString() }));
   } catch (err) {
-    console.error('[PortDrop:feedback] Write failed:', err);
+    console.error('[PortDrop:feedback] Redis write failed:', err);
     return NextResponse.json({ error: 'Could not save feedback. Try again.' }, { status: 500 });
   }
 

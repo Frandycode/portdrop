@@ -10,6 +10,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@upstash/redis": "^1.38.0",
     "geist": "^1.7.0",
     "highlight.js": "^11.11.1",
     "next": "^14.2.3",

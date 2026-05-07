@@ -12,11 +12,12 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { appendFileSync, mkdirSync } from 'fs';
-import { join } from 'path';
+import { Redis } from '@upstash/redis';
 
-const DATA_DIR  = join(process.cwd(), 'data');
-const DATA_FILE = join(DATA_DIR, 'waitlist.jsonl');
+const redis = new Redis({
+  url:   process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
 
 export async function POST(req: NextRequest) {
   let email: string;
@@ -32,10 +33,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    mkdirSync(DATA_DIR, { recursive: true });
-    appendFileSync(DATA_FILE, JSON.stringify({ email, ts: new Date().toISOString() }) + '\n');
+    await redis.lpush('waitlist', JSON.stringify({ email, ts: new Date().toISOString() }));
   } catch (err) {
-    console.error('[PortDrop:waitlist] Write failed:', err);
+    console.error('[PortDrop:waitlist] Redis write failed:', err);
     return NextResponse.json({ error: 'Could not save your email. Try again.' }, { status: 500 });
   }
 
