@@ -142,6 +142,22 @@ body {
 .pd-log-n    { color: var(--pd-gold); font-family: monospace; min-width: 18px; }
 .pd-log-time { color: #94a3b8; }
 .pd-log-empty { font-size: 10px; color: var(--pd-muted); font-style: italic; text-align: center; padding: 4px 0; }
+.pd-log-cap-warn {
+  display: flex; flex-direction: column; gap: 5px;
+  font-size: 10px; color: #f97316;
+  background: rgba(249,115,22,0.08);
+  border: 1px solid rgba(249,115,22,0.25);
+  border-radius: 6px; padding: 7px 9px; margin-bottom: 4px;
+}
+.pd-log-reset-btn {
+  align-self: flex-start;
+  font-size: 10px; font-family: inherit;
+  padding: 3px 10px; border-radius: 5px;
+  border: 1px solid rgba(249,115,22,0.45);
+  background: rgba(249,115,22,0.12);
+  color: #f97316; cursor: pointer;
+}
+.pd-log-reset-btn:hover { background: rgba(249,115,22,0.22); }
 
 /* Action buttons */
 .pd-actions { display: flex; flex-direction: column; gap: 6px; }

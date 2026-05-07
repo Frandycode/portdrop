@@ -83,6 +83,52 @@ export async function GET(
   });
 }
 
+/**
+ * PATCH /api/sessions/[sessionId]
+ *
+ * Allows the extension to push admin-driven changes (TTL, viewer cap,
+ * scan count reset) back into Redis so the live dashboard reflects them.
+ */
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { sessionId: string } },
+) {
+  const { sessionId } = params;
+
+  let body: { expiresAt?: string; maxUsers?: number | null; scanCount?: number };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
+  }
+
+  try {
+    const raw = await redis.get(`session:${sessionId}`);
+    if (!raw) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+
+    const session = (typeof raw === 'string' ? JSON.parse(raw) : raw) as RedisSession;
+
+    const updated: RedisSession = {
+      ...session,
+      ...(body.expiresAt  !== undefined && { expiresAt: body.expiresAt }),
+      ...(body.maxUsers   !== undefined && { maxUsers:  body.maxUsers  }),
+      ...(body.scanCount  !== undefined && { scanCount: body.scanCount }),
+    };
+
+    const expiresMs = new Date(updated.expiresAt).getTime() - Date.now();
+    await redis.set(
+      `session:${sessionId}`,
+      JSON.stringify(updated),
+      { ex: Math.max(60, Math.ceil(expiresMs / 1_000)) },
+    );
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error('[PortDrop:patch]', err);
+    return NextResponse.json({ error: 'redis_error' }, { status: 500 });
+  }
+}
+
 async function _updateSession(sessionId: string, session: RedisSession): Promise<void> {
   const ttl = await redis.ttl(`session:${sessionId}`);
   await redis.set(`session:${sessionId}`, JSON.stringify(session), { ex: Math.max(60, ttl) });

@@ -56,6 +56,7 @@ export class SessionManager {
 
   private tunnelProcess: ChildProcess | null  = null;
   private ttlTimer: NodeJS.Timeout | null     = null;
+  private syncInterval: NodeJS.Timeout | null = null;
   private currentSessionId: string | null     = null;
   private expiryListener:  ((id: string) => void) | null          = null;
   private scanListener:    ((id: string, count: number, at: Date) => void) | null = null;
@@ -77,12 +78,47 @@ export class SessionManager {
         case 'REQUEST_ADJUST_TTL':
           if (this.currentSessionId) {
             sessionStore.adjustTTL(this.currentSessionId, msg.deltaMs);
+            const rec = sessionStore.get(this.currentSessionId);
+            if (rec) {
+              fetch(`${DASHBOARD_URL}/api/sessions/${this.currentSessionId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ expiresAt: rec.expiresAt.toISOString() }),
+              }).catch(() => {});
+            }
           }
           break;
         case 'REQUEST_UPDATE_USERS':
           if (this.currentSessionId) {
+            const prevRec = sessionStore.get(this.currentSessionId);
             sessionStore.updateMaxUsers(this.currentSessionId, msg.maxUsers);
             this.state.maxUsers = msg.maxUsers;
+            fetch(`${DASHBOARD_URL}/api/sessions/${this.currentSessionId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ maxUsers: msg.maxUsers ?? null }),
+            }).catch(() => {});
+            // Warn if SA reduces cap below current viewer count
+            if (prevRec && msg.maxUsers !== undefined && prevRec.scanCount > msg.maxUsers) {
+              vscode.window.showWarningMessage(
+                `[PortDrop] ${prevRec.scanCount} viewer${prevRec.scanCount !== 1 ? 's' : ''} are already in — new cap of ${msg.maxUsers} won't remove them. Open the access log to reset viewer count.`,
+              );
+            }
+          }
+          break;
+        case 'REQUEST_RESET_VIEWERS':
+          if (this.currentSessionId) {
+            const rec = sessionStore.get(this.currentSessionId);
+            if (rec) {
+              rec.scanCount = 0;
+              fetch(`${DASHBOARD_URL}/api/sessions/${this.currentSessionId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ scanCount: 0 }),
+              }).catch(() => {});
+              this.sidebar.post({ type: 'VIEWERS_RESET' });
+              this.statusBar.setScanCount(0);
+            }
           }
           break;
       }
@@ -363,6 +399,33 @@ export class SessionManager {
         };
         sessionStore.on('updated', this.updateListener);
 
+        // Poll the dashboard for scan count changes every 15s.
+        // Viewers hit portdrop.app/s/[id] → Redis increments scanCount.
+        // The extension has no direct notification, so we poll peek.
+        let lastSyncedScanCount = record.scanCount; // 0 on session create
+        this.syncInterval = setInterval(async () => {
+          if (!this.currentSessionId) return;
+          try {
+            const res = await fetch(
+              `${DASHBOARD_URL}/api/sessions/${this.currentSessionId}/peek`,
+              { signal: AbortSignal.timeout(5_000) },
+            );
+            if (!res.ok) return;
+            const data = await res.json() as { scanCount: number; expiresAt: string; maxUsers: number | null };
+            if (data.scanCount > lastSyncedScanCount) {
+              for (let i = lastSyncedScanCount + 1; i <= data.scanCount; i++) {
+                const at = new Date().toISOString();
+                this.sidebar.post({ type: 'SCAN_RECEIVED', scanCount: i, at });
+                this.statusBar.setScanCount(i);
+                // Keep local store in sync so cap-check in REQUEST_UPDATE_USERS is accurate
+                const localRec = sessionStore.get(this.currentSessionId!);
+                if (localRec) localRec.scanCount = data.scanCount;
+              }
+              lastSyncedScanCount = data.scanCount;
+            }
+          } catch { /* network hiccup — keep going */ }
+        }, 15_000);
+
         this.currentSessionId = record.sessionId;
 
         this.state = {
@@ -445,6 +508,11 @@ export class SessionManager {
     if (this.updateListener) {
       sessionStore.off('updated', this.updateListener);
       this.updateListener = null;
+    }
+
+    if (this.syncInterval) {
+      clearInterval(this.syncInterval);
+      this.syncInterval = null;
     }
 
     if (this.currentSessionId) {

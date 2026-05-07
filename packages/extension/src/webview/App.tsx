@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useReducer, useState } from 'react';
-import { ExtensionMessage, SessionStartedMessage, ScanReceivedMessage, WebviewMessage } from './messages';
+import { ExtensionMessage, SessionStartedMessage, ScanReceivedMessage } from './messages';
 import { vscode } from './vscode-api';
 import { QRPanel }            from './components/QRPanel';
 import { TTLClock }           from './components/TTLClock';
@@ -59,6 +59,7 @@ type Action =
   | { type: 'SESSION_EXPIRED' }
   | { type: 'SCAN_RECEIVED';   msg: ScanReceivedMessage }
   | { type: 'SESSION_UPDATED'; expiresAt?: string; maxUsers?: number | null }
+  | { type: 'VIEWERS_RESET' }
   | { type: 'RELAY_ERROR';     message: string };
 
 function reducer(state: AppState, action: Action): AppState {
@@ -119,6 +120,14 @@ function reducer(state: AppState, action: Action): AppState {
           scanCount: msg.scanCount,
           scanLog:   [...state.session.scanLog, { n: msg.scanCount, at: msg.at }],
         },
+      };
+    }
+
+    case 'VIEWERS_RESET': {
+      if (state.status !== 'active') return state;
+      return {
+        ...state,
+        session: { ...state.session, scanCount: 0, scanLog: [] },
       };
     }
 
@@ -272,7 +281,11 @@ function ActiveView({ session }: { session: ActiveSession }) {
         pin={session.pin}
         oneTimeScan={session.oneTimeScan}
       />
-      <AccessLog scanLog={session.scanLog} />
+      <AccessLog
+        scanLog={session.scanLog}
+        scanCount={session.scanCount}
+        maxUsers={session.maxUsers}
+      />
 
       <div className="pd-actions">
         <FlashButton
@@ -345,6 +358,9 @@ export default function App() {
           break;
         case 'SESSION_UPDATED':
           dispatch({ type: 'SESSION_UPDATED', expiresAt: msg.expiresAt, maxUsers: msg.maxUsers });
+          break;
+        case 'VIEWERS_RESET':
+          dispatch({ type: 'VIEWERS_RESET' });
           break;
         case 'RELAY_ERROR':
           clearTimeout(timer);

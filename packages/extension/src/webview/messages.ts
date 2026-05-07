@@ -19,6 +19,7 @@ export type ExtensionMessage =
   | SessionExpiredMessage
   | ScanReceivedMessage
   | SessionUpdatedMessage
+  | ViewersResetMessage
   | RelayErrorMessage;
 
 export interface SessionStartedMessage {
@@ -48,6 +49,10 @@ export interface SessionExpiredMessage {
   type: 'SESSION_EXPIRED';
 }
 
+export interface ViewersResetMessage {
+  type: 'VIEWERS_RESET';
+}
+
 export interface RelayErrorMessage {
   type:    'RELAY_ERROR';
   message: string;
@@ -66,7 +71,8 @@ export type WebviewMessage =
   | CopyUrlRequestMessage
   | OpenDashboardRequestMessage
   | AdjustTTLRequestMessage
-  | UpdateMaxUsersRequestMessage;
+  | UpdateMaxUsersRequestMessage
+  | ResetViewersRequestMessage;
 
 export interface StopRequestMessage {
   type: 'REQUEST_STOP';
@@ -88,4 +94,8 @@ export interface AdjustTTLRequestMessage {
 export interface UpdateMaxUsersRequestMessage {
   type:     'REQUEST_UPDATE_USERS';
   maxUsers: number | undefined; // undefined = remove cap (unlimited)
+}
+
+export interface ResetViewersRequestMessage {
+  type: 'REQUEST_RESET_VIEWERS';
 }
