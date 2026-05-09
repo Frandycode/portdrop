@@ -16,8 +16,13 @@ import * as fs   from 'fs';
 import * as path from 'path';
 import { sessionStore } from '../store/sessionStore';
 
-/** Port the relay listens on — Next.js API route calls this */
-const RELAY_PORT = 49_491; // fixed high port, unlikely to collide
+/**
+ * Port the relay listens on. Assigned dynamically by the OS at startRelay()
+ * time so multiple VS Code windows can each run their own relay without
+ * colliding on a fixed port. Read via getRelayPort() after startRelay()
+ * resolves.
+ */
+let relayPort: number | null = null;
 
 let server: http.Server | null = null;
 
@@ -204,19 +209,19 @@ export function startRelay(): Promise<void> {
 
     server.on('error', (err: NodeJS.ErrnoException) => {
       console.error(`[PortDrop:Relay] Server error: ${err.message}`);
-      if (err.code === 'EADDRINUSE') {
-        reject(new Error(
-          `Port ${RELAY_PORT} is already in use — another PortDrop instance may be running. ` +
-          `Restart VS Code to fix this.`,
-        ));
-      } else {
-        reject(err);
-      }
+      reject(err);
     });
 
-    server.listen(RELAY_PORT, '127.0.0.1', () => {
-      console.log(`[PortDrop:Relay] Listening on http://127.0.0.1:${RELAY_PORT}`);
-      resolve();
+    // Port 0 lets the OS assign a free port — avoids cross-window collisions.
+    server.listen(0, '127.0.0.1', () => {
+      const addr = server!.address();
+      if (typeof addr === 'object' && addr !== null) {
+        relayPort = addr.port;
+        console.log(`[PortDrop:Relay] Listening on http://127.0.0.1:${relayPort}`);
+        resolve();
+      } else {
+        reject(new Error('Relay listen() returned no address'));
+      }
     });
   });
 }
@@ -233,13 +238,20 @@ export function stopRelay(): Promise<void> {
     }
     server.close(() => {
       server = null;
+      relayPort = null;
       console.log('[PortDrop:Relay] Server stopped.');
       resolve();
     });
   });
 }
 
-export { RELAY_PORT };
+/** Returns the OS-assigned relay port, or throws if startRelay hasn't resolved yet. */
+export function getRelayPort(): number {
+  if (relayPort === null) {
+    throw new Error('Relay is not running — call startRelay() first.');
+  }
+  return relayPort;
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

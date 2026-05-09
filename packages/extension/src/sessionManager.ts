@@ -16,7 +16,7 @@ import { ChildProcess } from 'child_process';
 import { StatusBarManager } from './statusBar';
 import { resolveCloudflared } from './tunnel/installer';
 import { startTunnel, stopTunnel } from './tunnel/cloudflare';
-import { RELAY_PORT }              from './relay/server';
+import { getRelayPort }            from './relay/server';
 import { generateQRDataUri } from './qrGenerator';
 import { sessionStore } from './store/sessionStore';
 import { TTLOption, SYSTEM_MAX_USERS } from './store/types';
@@ -324,7 +324,7 @@ export class SessionManager {
         let relayUrl: string | null = null;
         if (codeViewEnabled) {
           try {
-            const relayResult = await startTunnel(binaryPath, RELAY_PORT);
+            const relayResult = await startTunnel(binaryPath, getRelayPort());
             this.relayTunnelProcess = relayResult.process;
             relayUrl = relayResult.publicUrl;
           } catch (err) {
