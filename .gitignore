@@ -68,5 +68,9 @@ PortDrop_*
 # Local brand exploration and generated data — not part of the repo
 updated-logo/
 portdrop_dot_variants.html
-zerror-images/
+zerrors/
 data/
+TEST_P*
+
+# Vercel CLI project link
+.vercel/
