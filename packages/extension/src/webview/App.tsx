@@ -189,7 +189,7 @@ function IdleView() {
   return (
     <div className="pd-idle">
       <div className="pd-idle-logo">
-        {/* Tricolor-denim logo — matches updated-logo/extracted/tricolor-denim-master.svg */}
+        {/* Tricolor logo — transparent bg, rings and plug only */}
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="-100 -100 200 200" width="96" height="96">
           {/* Outer tricolor arc */}
           <path d="M 0,-69 A 69,69 0 0,1 59.76,34.5" fill="none" stroke="#10b981" strokeWidth="1.8" strokeLinecap="round"/>
@@ -198,8 +198,6 @@ function IdleView() {
           <circle cx="0" cy="-69" r="3" fill="#10b981"/>
           <circle cx="59.76" cy="34.5" r="3" fill="#eab308"/>
           <circle cx="-59.76" cy="34.5" r="3" fill="#ef4444"/>
-          {/* Navy disc */}
-          <circle cx="0" cy="0" r="58" fill="#1C3B6B"/>
           {/* Inner dashed tricolor ring */}
           <path d="M 0,-58 A 58,58 0 0,1 50.23,29" fill="none" stroke="#10b981" strokeWidth="1.0" strokeDasharray="6,4" strokeLinecap="round" opacity="0.85"/>
           <path d="M 50.23,29 A 58,58 0 0,1 -50.23,29" fill="none" stroke="#eab308" strokeWidth="1.0" strokeDasharray="6,4" strokeLinecap="round" opacity="0.85"/>
