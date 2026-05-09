@@ -16,6 +16,7 @@ import { ChildProcess } from 'child_process';
 import { StatusBarManager } from './statusBar';
 import { resolveCloudflared } from './tunnel/installer';
 import { startTunnel, stopTunnel } from './tunnel/cloudflare';
+import { RELAY_PORT }              from './relay/server';
 import { generateQRDataUri } from './qrGenerator';
 import { sessionStore } from './store/sessionStore';
 import { TTLOption, SYSTEM_MAX_USERS } from './store/types';
@@ -54,7 +55,8 @@ export class SessionManager {
     maxUsers: undefined,
   };
 
-  private tunnelProcess: ChildProcess | null  = null;
+  private tunnelProcess: ChildProcess | null       = null;
+  private relayTunnelProcess: ChildProcess | null  = null;
   private ttlTimer: NodeJS.Timeout | null     = null;
   private syncInterval: NodeJS.Timeout | null = null;
   private currentSessionId: string | null     = null;
@@ -293,7 +295,7 @@ export class SessionManager {
       return;
     }
 
-    // ── Spin up tunnel ───────────────────────────────────────────────────────
+    // ── Spin up tunnel(s) ────────────────────────────────────────────────────
     await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
@@ -317,6 +319,19 @@ export class SessionManager {
         // Resolve workspace root and user blocklist for Code View
         const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? null;
         const blocklist     = vscode.workspace.getConfiguration('portdrop').get<string[]>('blocklist', []);
+
+        // If code view is enabled, also tunnel the relay so Vercel can reach it
+        let relayUrl: string | null = null;
+        if (codeViewEnabled) {
+          try {
+            const relayResult = await startTunnel(binaryPath, RELAY_PORT);
+            this.relayTunnelProcess = relayResult.process;
+            relayUrl = relayResult.publicUrl;
+          } catch (err) {
+            console.error('[PortDrop] Failed to tunnel relay port:', err);
+            vscode.window.showWarningMessage('[PortDrop] Could not open relay tunnel — code view will be unavailable.');
+          }
+        }
 
         // Register with the session store — store owns TTL scheduling
         const record = sessionStore.create({
@@ -348,6 +363,7 @@ export class SessionManager {
             body: JSON.stringify({
               sessionId:       record.sessionId,
               publicUrl:       result.publicUrl,
+              relayUrl,
               expiresAt:       record.expiresAt.toISOString(),
               pinHash:         record.pinHash   ?? null,
               oneTimeScan:     record.oneTimeScan,
@@ -485,6 +501,10 @@ export class SessionManager {
     if (this.tunnelProcess) {
       stopTunnel(this.tunnelProcess);
       this.tunnelProcess = null;
+    }
+    if (this.relayTunnelProcess) {
+      stopTunnel(this.relayTunnelProcess);
+      this.relayTunnelProcess = null;
     }
     // Do NOT reset stoppingIntentionally here — the 'close' event fires async
     // after the process actually dies, so the flag must stay true until then.

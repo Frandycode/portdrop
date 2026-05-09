@@ -13,10 +13,11 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FiExternalLink, FiZap, FiEye, FiClock, FiCopy, FiCheck, FiLock, FiRefreshCw, FiCode, FiMonitor } from 'react-icons/fi';
 import { TTLCountdown } from './TTLCountdown';
 import { CodeBreederBadge } from './CodeBreederBadge';
+import { AppPreview } from './AppPreview';
 import { FileTree } from './FileTree';
 import { CodeViewer } from './CodeViewer';
 
@@ -126,66 +127,79 @@ export function SessionLaunch({
     </button>
   );
 
-  if (tab === 'code' && codeViewEnabled) {
-    return (
-      <>
-        <style>{sharedStyle}</style>
-        <main style={{
-          height: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          backgroundColor: '#0d1b33',
-          backgroundImage: [
-            'repeating-linear-gradient(150deg, rgba(255,255,255,0.013) 0px, rgba(255,255,255,0.013) 1px, transparent 1px, transparent 8px)',
-            'repeating-linear-gradient(60deg,  rgba(255,255,255,0.009) 0px, rgba(255,255,255,0.009) 1px, transparent 1px, transparent 8px)',
-          ].join(', '),
-          fontFamily: 'var(--font-geist-mono), monospace',
-          overflow: 'hidden',
+  const codeViewHeader = (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 12,
+      padding: '10px 20px',
+      borderBottom: '1px solid #1e293b',
+      background: 'rgba(13,23,42,0.95)',
+      flexShrink: 0,
+    }}>
+      <a href="/" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none', opacity:0.85, flexShrink:0 }}>
+        <LogoMark size={24} />
+        <span style={{ fontSize:10, fontWeight:700, letterSpacing:'0.28em', textTransform:'uppercase', color:'#22d3ee' }}>PortDrop</span>
+      </a>
+      <div style={{ width:1, height:16, background:'#1e293b', flexShrink:0 }} />
+      <div style={{ display:'flex', gap:4 }}>
+        {tabBtn('Preview', <FiMonitor size={11} />, 'preview')}
+        {tabBtn('Code', <FiCode size={11} />, 'code')}
+      </div>
+      <div style={{ flex:1 }} />
+      <TTLCountdown expiresAt={liveExpiresAt} />
+    </div>
+  );
+
+  const codeViewShell = (children: React.ReactNode) => (
+    <>
+      <style>{sharedStyle}</style>
+      <main style={{
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: '#0d1b33',
+        backgroundImage: [
+          'repeating-linear-gradient(150deg, rgba(255,255,255,0.013) 0px, rgba(255,255,255,0.013) 1px, transparent 1px, transparent 8px)',
+          'repeating-linear-gradient(60deg,  rgba(255,255,255,0.009) 0px, rgba(255,255,255,0.009) 1px, transparent 1px, transparent 8px)',
+        ].join(', '),
+        fontFamily: 'var(--font-geist-mono), monospace',
+        overflow: 'hidden',
+      }}>
+        {codeViewHeader}
+        {children}
+      </main>
+    </>
+  );
+
+  if (codeViewEnabled && tab === 'preview') {
+    return codeViewShell(
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <AppPreview tunnelUrl={publicUrl} expiresAt={liveExpiresAt} />
+      </div>,
+    );
+  }
+
+  if (codeViewEnabled && tab === 'code') {
+    return codeViewShell(
+      <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
+        {/* File tree sidebar */}
+        <div style={{
+          width: 240, flexShrink: 0,
+          borderRight: '1px solid #1e293b',
+          overflowY: 'auto',
+          background: 'rgba(13,23,42,0.6)',
         }}>
-          {/* Code view header */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            padding: '10px 20px',
-            borderBottom: '1px solid #1e293b',
-            background: 'rgba(13,23,42,0.95)',
-            flexShrink: 0,
-          }}>
-            <a href="/" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none', opacity:0.85, flexShrink:0 }}>
-              <LogoMark size={24} />
-              <span style={{ fontSize:10, fontWeight:700, letterSpacing:'0.28em', textTransform:'uppercase', color:'#22d3ee' }}>PortDrop</span>
-            </a>
-            <div style={{ width:1, height:16, background:'#1e293b', flexShrink:0 }} />
-            <div style={{ display:'flex', gap:4 }}>
-              {tabBtn('Preview', <FiMonitor size={11} />, 'preview')}
-              {tabBtn('Code', <FiCode size={11} />, 'code')}
-            </div>
-            <div style={{ flex:1 }} />
-            <TTLCountdown expiresAt={liveExpiresAt} />
-          </div>
+          <FileTree
+            sessionId={sessionId}
+            selectedPath={selectedFilePath}
+            onSelectFile={setSelectedFilePath}
+          />
+        </div>
 
-          {/* Split panel */}
-          <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
-            {/* File tree sidebar */}
-            <div style={{
-              width: 240, flexShrink: 0,
-              borderRight: '1px solid #1e293b',
-              overflowY: 'auto',
-              background: 'rgba(13,23,42,0.6)',
-            }}>
-              <FileTree
-                sessionId={sessionId}
-                selectedPath={selectedFilePath}
-                onSelectFile={setSelectedFilePath}
-              />
-            </div>
-
-            {/* Code viewer */}
-            <div style={{ flex:1, overflow:'hidden', background:'rgba(13,23,42,0.4)' }}>
-              <CodeViewer sessionId={sessionId} filePath={selectedFilePath} />
-            </div>
-          </div>
-        </main>
-      </>
+        {/* Code viewer */}
+        <div style={{ flex:1, overflow:'hidden', background:'rgba(13,23,42,0.4)' }}>
+          <CodeViewer sessionId={sessionId} filePath={selectedFilePath} />
+        </div>
+      </div>,
     );
   }
 

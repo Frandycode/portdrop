@@ -12,15 +12,16 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-
-const RELAY_BASE = 'http://127.0.0.1:49491';
+import { redis }                     from '@/lib/redis';
+import type { RedisSession }         from '@/app/api/sessions/register/route';
 
 /**
  * GET /api/code/file?sessionId=X&path=X
  *
- * Proxies to the relay /file endpoint which reads a single file from
- * the workspace and returns { content, path }. The relay enforces the
- * path traversal guard and blocklist — this route just proxies.
+ * Looks up the session's relayUrl from Redis, then proxies to the relay
+ * /file endpoint which reads a single file from the workspace and returns
+ * { content, path }. The relay enforces the path traversal guard and
+ * blocklist — this route just proxies.
  */
 export async function GET(req: NextRequest) {
   const sessionId = req.nextUrl.searchParams.get('sessionId') ?? '';
@@ -30,9 +31,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'sessionId and path are required.' }, { status: 400 });
   }
 
+  const raw = await redis.get(`session:${sessionId}`).catch(() => null);
+  if (!raw) {
+    return NextResponse.json({ error: 'Session not found.' }, { status: 404 });
+  }
+
+  const session = (typeof raw === 'string' ? JSON.parse(raw) : raw) as RedisSession;
+
+  if (!session.codeViewEnabled || !session.relayUrl) {
+    return NextResponse.json({ error: 'Code view not enabled for this session.' }, { status: 403 });
+  }
+
   try {
     const relayRes = await fetch(
-      `${RELAY_BASE}/file?sessionId=${encodeURIComponent(sessionId)}&path=${encodeURIComponent(filePath)}`,
+      `${session.relayUrl}/file?sessionId=${encodeURIComponent(sessionId)}&path=${encodeURIComponent(filePath)}`,
       { signal: AbortSignal.timeout(5_000) },
     );
 

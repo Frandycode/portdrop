@@ -17,6 +17,7 @@ import { redis } from '@/lib/redis';
 export interface RedisSession {
   sessionId:       string;
   publicUrl:       string;
+  relayUrl:        string | null;
   expiresAt:       string;
   pinHash:         string | null;
   oneTimeScan:     boolean;
@@ -32,6 +33,7 @@ export async function POST(req: NextRequest) {
   let body: {
     sessionId?: string;
     publicUrl?: string;
+    relayUrl?: string | null;
     expiresAt?: string;
     pinHash?: string | null;
     oneTimeScan?: boolean;
@@ -56,8 +58,9 @@ export async function POST(req: NextRequest) {
   const session: RedisSession = {
     sessionId,
     publicUrl,
+    relayUrl:        body.relayUrl         ?? null,
     expiresAt,
-    pinHash:         body.pinHash         ?? null,
+    pinHash:         body.pinHash          ?? null,
     oneTimeScan:     body.oneTimeScan      ?? false,
     maxUsers:        body.maxUsers         ?? null,
     codeViewEnabled: body.codeViewEnabled  ?? false,
