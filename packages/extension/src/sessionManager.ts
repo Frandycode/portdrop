@@ -615,9 +615,12 @@ export class SessionManager {
   }
 
   /**
-   * Workspace file picker for the Code View allowlist.
-   * Returns the picked workspace-relative paths (forward-slash, sorted),
-   * or undefined if the user cancelled.
+   * Hierarchical workspace picker for the Code View allowlist.
+   *
+   * Folders can be expanded/collapsed inline via per-row chevron buttons.
+   * Ticking a folder selects every file under it (snapshot at pick time);
+   * ticking individual files adds just that file. Returns sorted relative
+   * file paths (forward-slash) or undefined if the user dismissed the picker.
    */
   private async pickAllowlistFiles(): Promise<string[] | undefined> {
     const root = vscode.workspace.workspaceFolders?.[0];
@@ -632,25 +635,180 @@ export class SessionManager {
       ...userBlocklist.map((p) => `**/${p}/**`),
     ].join(',');
 
-    const uris = await vscode.workspace.findFiles('**/*', `{${excludeGlobs}}`, 5000);
-    const items = uris
-      .map((uri) => vscode.workspace.asRelativePath(uri, false).split('\\').join('/'))
-      .sort()
-      .map((label) => ({ label, picked: false }));
+    const uris  = await vscode.workspace.findFiles('**/*', `{${excludeGlobs}}`, 5000);
+    const paths = uris.map((uri) => vscode.workspace.asRelativePath(uri, false).split('\\').join('/')).sort();
 
-    if (items.length === 0) {
+    if (paths.length === 0) {
       vscode.window.showWarningMessage('[PortDrop] No files matched — workspace may be empty after the blocklist.');
       return [];
     }
 
-    const picked = await vscode.window.showQuickPick(items, {
-      title:        'PortDrop — Pick files to expose',
-      placeHolder:  `Select files (${items.length} available). Click each to include.`,
-      canPickMany:  true,
-      matchOnDetail: true,
-    });
+    const tree         = buildPickerTree(paths);
+    const expandedDirs = new Set<string>();
+    const selectedFiles = new Set<string>();
 
-    if (picked === undefined) return undefined;
-    return picked.map((p) => p.label).sort();
+    return new Promise<string[] | undefined>((resolve) => {
+      const qp = vscode.window.createQuickPick<PickItem>();
+      qp.title         = 'PortDrop — Pick files to expose';
+      qp.placeholder   = 'Click ▶ to expand a folder. Tick a folder to include every file in it.';
+      qp.canSelectMany = true;
+      qp.matchOnDescription = true;
+
+      let suppressEvent = false;
+      let lastFocusPath: string | null = null;
+
+      const render = () => {
+        suppressEvent = true;
+        const items     = buildPickerItems(tree, expandedDirs);
+        const selected  = items.filter((it) =>
+          it.pdType === 'file'
+            ? selectedFiles.has(it.pdPath)
+            : it.pdDescendants.length > 0 && it.pdDescendants.every((p) => selectedFiles.has(p)),
+        );
+        qp.items         = items;
+        qp.selectedItems = selected;
+        qp.title         = `PortDrop — Pick files to expose  ·  ${selectedFiles.size} selected`;
+        if (lastFocusPath) {
+          const focus = items.find((it) => it.pdPath === lastFocusPath);
+          if (focus) qp.activeItems = [focus];
+        }
+        suppressEvent = false;
+      };
+
+      qp.onDidChangeSelection((selectedItems) => {
+        if (suppressEvent) return;
+        const visible       = qp.items;
+        const nowSelected   = new Set(selectedItems.map((it) => it.pdPath));
+        for (const it of visible) {
+          const shouldFlipOn = nowSelected.has(it.pdPath);
+          if (it.pdType === 'file') {
+            if (shouldFlipOn) selectedFiles.add(it.pdPath);
+            else              selectedFiles.delete(it.pdPath);
+          } else {
+            if (shouldFlipOn) for (const f of it.pdDescendants) selectedFiles.add(f);
+            else              for (const f of it.pdDescendants) selectedFiles.delete(f);
+          }
+        }
+        render();
+      });
+
+      qp.onDidTriggerItemButton((e) => {
+        const item = e.item;
+        if (item.pdType !== 'directory') return;
+        if (expandedDirs.has(item.pdPath)) expandedDirs.delete(item.pdPath);
+        else                                expandedDirs.add(item.pdPath);
+        lastFocusPath = item.pdPath;
+        render();
+      });
+
+      qp.onDidAccept(() => {
+        qp.hide();
+        resolve(Array.from(selectedFiles).sort());
+      });
+
+      qp.onDidHide(() => {
+        qp.dispose();
+        // If onDidAccept already resolved, this no-op resolve is ignored by Promise.
+        resolve(undefined);
+      });
+
+      render();
+      qp.show();
+    });
   }
+}
+
+// ── Allowlist picker helpers ────────────────────────────────────────────────
+
+interface PickItem extends vscode.QuickPickItem {
+  pdPath:        string;
+  pdType:        'file' | 'directory';
+  pdDescendants: string[]; // folders: every file path beneath them; files: empty
+  pdDepth:       number;
+}
+
+interface PickerNode {
+  path:            string;
+  name:            string;
+  type:            'file' | 'directory';
+  children:        PickerNode[];
+  fileDescendants: string[]; // files only, all under this node
+}
+
+/** Build a sorted tree from a flat list of forward-slash file paths. */
+function buildPickerTree(paths: string[]): PickerNode {
+  const root: PickerNode = { path: '', name: '', type: 'directory', children: [], fileDescendants: [] };
+  for (const p of paths) {
+    const parts = p.split('/').filter((s) => s.length > 0);
+    let cursor = root;
+    for (let i = 0; i < parts.length; i++) {
+      const isLast   = i === parts.length - 1;
+      const fullPath = parts.slice(0, i + 1).join('/');
+      let child = cursor.children.find((c) => c.name === parts[i]);
+      if (!child) {
+        child = {
+          path:            fullPath,
+          name:            parts[i],
+          type:            isLast ? 'file' : 'directory',
+          children:        [],
+          fileDescendants: [],
+        };
+        cursor.children.push(child);
+      }
+      cursor = child;
+    }
+  }
+
+  const sortChildren = (n: PickerNode) => {
+    n.children.sort((a, b) => a.type !== b.type ? (a.type === 'directory' ? -1 : 1) : a.name.localeCompare(b.name));
+    n.children.forEach(sortChildren);
+  };
+  sortChildren(root);
+
+  const collectFiles = (n: PickerNode): string[] => {
+    if (n.type === 'file') return [n.path];
+    const all: string[] = [];
+    for (const c of n.children) all.push(...collectFiles(c));
+    n.fileDescendants = all;
+    return all;
+  };
+  collectFiles(root);
+
+  return root;
+}
+
+/** Render the visible items: only nodes whose ancestors are all expanded. */
+function buildPickerItems(root: PickerNode, expanded: Set<string>): PickItem[] {
+  const out: PickItem[] = [];
+  const walk = (node: PickerNode, depth: number) => {
+    if (node !== root) {
+      const indent     = '  '.repeat(depth);
+      const isExpanded = node.type === 'directory' && expanded.has(node.path);
+      const icon       = node.type === 'directory'
+        ? (isExpanded ? '$(folder-opened)' : '$(folder)')
+        : '$(file)';
+      const item: PickItem = {
+        label:         `${indent}${icon} ${node.name}${node.type === 'directory' ? '/' : ''}`,
+        pdPath:        node.path,
+        pdType:        node.type,
+        pdDescendants: node.fileDescendants,
+        pdDepth:       depth,
+      };
+      if (node.type === 'directory') {
+        item.buttons = [{
+          iconPath: new vscode.ThemeIcon(isExpanded ? 'chevron-down' : 'chevron-right'),
+          tooltip:  isExpanded ? 'Collapse' : 'Expand',
+        }];
+        const fileCount = node.fileDescendants.length;
+        item.description = `${fileCount} file${fileCount === 1 ? '' : 's'}`;
+      }
+      out.push(item);
+    }
+    if (node === root || expanded.has(node.path)) {
+      const childDepth = node === root ? 0 : depth + 1;
+      for (const c of node.children) walk(c, childDepth);
+    }
+  };
+  walk(root, 0);
+  return out;
 }
