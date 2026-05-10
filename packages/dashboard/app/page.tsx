@@ -275,6 +275,56 @@ export default function HomePage() {
                   name: 'Sidebar control panel',
                   desc: 'Start, stop, copy URL, open in browser — all without leaving your editor.',
                 },
+                {
+                  icon: (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <rect x="3" y="4" width="18" height="16" rx="1.5" stroke="#C48540" strokeWidth="1.4"/>
+                      <line x1="3" y1="9" x2="21" y2="9" stroke="#C48540" strokeWidth="1.2"/>
+                      <line x1="6" y1="13" x2="14" y2="13" stroke="#C48540" strokeWidth="1.2" strokeLinecap="round" opacity="0.7"/>
+                      <line x1="6" y1="16" x2="11" y2="16" stroke="#C48540" strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/>
+                    </svg>
+                  ),
+                  name: 'Code View',
+                  desc: 'Read-only file tree of your workspace alongside the running app. Viewers can browse and read; they cannot write.',
+                },
+                {
+                  icon: (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <rect x="3" y="3" width="3.5" height="3.5" rx="0.6" stroke="#C48540" strokeWidth="1.4"/>
+                      <path d="M3.7 4.8 L4.6 5.7 L5.7 4.2" stroke="#C48540" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                      <line x1="9" y1="4.7" x2="20" y2="4.7" stroke="#C48540" strokeWidth="1.2" strokeLinecap="round" opacity="0.7"/>
+                      <rect x="3" y="10.25" width="3.5" height="3.5" rx="0.6" stroke="#C48540" strokeWidth="1.4"/>
+                      <path d="M3.7 12 L4.6 12.9 L5.7 11.4" stroke="#C48540" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                      <line x1="9" y1="12" x2="20" y2="12" stroke="#C48540" strokeWidth="1.2" strokeLinecap="round" opacity="0.7"/>
+                      <rect x="3" y="17.5" width="3.5" height="3.5" rx="0.6" stroke="#C48540" strokeWidth="1.4" opacity="0.5"/>
+                      <line x1="9" y1="19.25" x2="17" y2="19.25" stroke="#C48540" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
+                    </svg>
+                  ),
+                  name: 'File allowlist',
+                  desc: 'Pick exactly which files (or whole folders) viewers can see. Hierarchical picker with inline expand/collapse. Everything else stays invisible.',
+                },
+                {
+                  icon: (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <rect x="5" y="11" width="14" height="10" rx="1.5" stroke="#C48540" strokeWidth="1.4"/>
+                      <path d="M8 11 V8 a4 4 0 0 1 8 0 V11" stroke="#C48540" strokeWidth="1.4"/>
+                      <circle cx="12" cy="15.5" r="1.2" fill="#C48540"/>
+                      <line x1="12" y1="16.7" x2="12" y2="18.5" stroke="#C48540" strokeWidth="1.2" strokeLinecap="round"/>
+                    </svg>
+                  ),
+                  name: 'PIN gate',
+                  desc: 'Optional 4-digit code on the session link. Without the PIN, viewers see a gate page instead of your app.',
+                },
+                {
+                  icon: (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 3 C 12 8, 6 9, 6 14 a6 6 0 0 0 12 0 c 0 -3 -2 -4 -3 -7 c -1 3 -3 4 -3 0 z" stroke="#C48540" strokeWidth="1.4" strokeLinejoin="round"/>
+                      <path d="M10 15 a2 2 0 0 0 4 0 c 0 -1 -1 -1.5 -1.5 -2.5 c -0.4 1 -1.3 1.4 -1.3 0 c -0.7 1 -1.2 1.6 -1.2 2.5 z" stroke="#C48540" strokeWidth="1.2" opacity="0.6"/>
+                    </svg>
+                  ),
+                  name: 'One-time-scan',
+                  desc: 'The link burns after the first viewer opens it. Use when you want a single specific person to look — and never have to clean up.',
+                },
               ].map(({ icon, name, desc }, i) => (
                 <div key={name} className="pd-feature-card" data-enter="swing" style={{animationDelay:`${i * 0.09}s`}}>
                   <div className="pd-feature-icon">{icon}</div>
@@ -293,9 +343,10 @@ export default function HomePage() {
               {[
                 { n:'01', name:'Install the extension', desc:'Download the .vsix from GitHub and install via VS Code: Extensions panel → ··· → Install from VSIX. Marketplace listing is coming with V2.' },
                 { n:'02', name:'Run PortDrop: Start Session', desc:'Open the command palette (Ctrl+Shift+P) and fire the command. PortDrop scans for running dev servers automatically.' },
-                { n:'03', name:'Pick your port', desc:'Select from the detected servers or type a port number manually. Works with any HTTP server.' },
-                { n:'04', name:'Set your time window', desc:'Choose 15 min, 1 hour, 4 hours, or enter a custom duration like 30m or 2h. The clock starts immediately.' },
-                { n:'05', name:'Share and go', desc:'A Cloudflare tunnel URL and QR code appear in the sidebar. Share either one. The session auto-expires — no cleanup on your end.' },
+                { n:'03', name:'Pick your port and TTL', desc:'Choose the detected server (or type a port). Then pick 15 min, 1 hour, 4 hours, or a custom duration. The clock starts immediately.' },
+                { n:'04', name:'Set access controls', desc:'Optional: turn on a 4-digit PIN to gate the link. Optional: enable one-time-scan so the link burns after the first viewer opens it.' },
+                { n:'05', name:'Optional Code View', desc:'Enable Code View to share a read-only file tree alongside the app. Then choose Full workspace or Pick specific files — the picker lets you expand folders inline and tick exactly what to expose.' },
+                { n:'06', name:'Share and go', desc:'A session URL and QR code appear in the sidebar and on portdrop.app. Share either one. The session auto-expires — no cleanup on your end.' },
               ].map(({ n, name, desc }, i) => (
                 <div key={n} className="pd-step" data-enter={i % 2 === 0 ? 'slide-left' : 'slide-right'} style={{animationDelay:`${i * 0.1}s`}}>
                   <div className="pd-step-num">{n}</div>
@@ -380,6 +431,24 @@ export default function HomePage() {
             <div className="pd-section-eyebrow"><span className="pd-pulse"/>History</div>
             <h2 className="pd-section-title">What&apos;s <span className="accent">shipped</span></h2>
             <div className="pd-changelog">
+              <div className="pd-cl-entry" data-enter="up">
+                <div>
+                  <div className="pd-cl-ver">v0.2.0</div>
+                  <div className="pd-cl-date">May 2026</div>
+                </div>
+                <ul className="pd-cl-items">
+                  <li>Code View — read-only file tree of your workspace alongside the running app</li>
+                  <li>File-level allowlist — pick exactly which files (or whole folders) viewers can see</li>
+                  <li>Hierarchical file picker with inline expand/collapse and folder-level cascade</li>
+                  <li>Custom syntax theme on the code viewer — gray comments, brand-palette tokens</li>
+                  <li>PIN gate — optional 4-digit code that locks the session link</li>
+                  <li>One-time-scan links — the link burns after the first viewer opens it</li>
+                  <li>Live admin controls — extend TTL or change viewer cap mid-session</li>
+                  <li>Scan count syncs to the VS Code sidebar in real time</li>
+                  <li>Multi-window VS Code support — run independent sessions from multiple windows at once</li>
+                  <li>Logo system — transparent mark, page-unique denim backgrounds across the dashboard</li>
+                </ul>
+              </div>
               <div className="pd-cl-entry" data-enter="up">
                 <div>
                   <div className="pd-cl-ver">v0.1.0</div>
