@@ -79,6 +79,13 @@ export interface SessionRecord {
    * merged with the relay's hard-coded default blocklist.
    */
   blocklist: string[];
+
+  /**
+   * Optional positive filter — when non-null, only these workspace-relative
+   * file paths (forward-slash) are exposed to viewers. null = full tree.
+   * Evaluated after the blocklist on the relay.
+   */
+  allowlist: string[] | null;
 }
 
 /** Public-safe projection sent to the dashboard — no internal fields */

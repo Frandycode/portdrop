@@ -15,7 +15,31 @@
 
 import { useEffect, useState } from 'react';
 import hljs from 'highlight.js';
-import 'highlight.js/styles/github-dark.css';
+
+// Custom highlight.js theme — matches the dashboard's denim/cyan/bronze palette.
+// Comments are gray (#9ca3af) per design; everything else picks from brand accents.
+const SYNTAX_THEME_CSS = `
+.hljs                                            { color: #e2e8f0; background: transparent; }
+.hljs-comment, .hljs-quote                       { color: #9ca3af; font-style: italic; }
+.hljs-keyword, .hljs-selector-tag, .hljs-doctag,
+.hljs-section, .hljs-subst                       { color: #22d3ee; }
+.hljs-string, .hljs-regexp, .hljs-template-tag,
+.hljs-template-variable                          { color: #eab308; }
+.hljs-number, .hljs-literal, .hljs-symbol,
+.hljs-bullet                                     { color: #10b981; }
+.hljs-title, .hljs-title.function_,
+.hljs-title.class_, .hljs-name                   { color: #a78bfa; }
+.hljs-built_in, .hljs-type, .hljs-class,
+.hljs-title.class_.inherited__                   { color: #f59e0b; }
+.hljs-attr, .hljs-attribute, .hljs-property      { color: #67e8f9; }
+.hljs-variable, .hljs-params                     { color: #e2e8f0; }
+.hljs-tag                                        { color: #94a3b8; }
+.hljs-meta, .hljs-meta-keyword                   { color: #94a3b8; }
+.hljs-deletion                                   { color: #ef4444; }
+.hljs-addition                                   { color: #10b981; }
+.hljs-emphasis                                   { font-style: italic; }
+.hljs-strong                                     { font-weight: 600; }
+`;
 
 interface CodeViewerProps {
   sessionId: string;
@@ -114,6 +138,7 @@ export function CodeViewer({ sessionId, filePath }: CodeViewerProps) {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <style>{SYNTAX_THEME_CSS}</style>
       {/* File header */}
       <div style={{
         padding: '8px 16px',
@@ -128,7 +153,7 @@ export function CodeViewer({ sessionId, filePath }: CodeViewerProps) {
 
       {/* Code block */}
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto' }}>
-        <pre style={{
+        <pre className="hljs" style={{
           margin: 0, padding: '16px 0',
           background: 'transparent',
           fontSize: 13, lineHeight: 1.6,

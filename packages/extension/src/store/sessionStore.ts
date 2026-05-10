@@ -80,6 +80,7 @@ export class SessionStore extends EventEmitter {
     maxUsers?: number;
     workspaceRoot?: string | null;
     blocklist?: string[];
+    allowlist?: string[] | null;
   }): SessionRecord {
     const sessionId = this.generateId();
     const startedAt = new Date();
@@ -108,6 +109,7 @@ export class SessionStore extends EventEmitter {
       maxUsers,
       workspaceRoot:   params.codeViewEnabled ? (params.workspaceRoot ?? null) : null,
       blocklist:       params.blocklist ?? [],
+      allowlist:       params.codeViewEnabled ? (params.allowlist ?? null) : null,
     };
 
     this.sessions.set(sessionId, record);

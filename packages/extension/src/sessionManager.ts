@@ -274,6 +274,7 @@ export class SessionManager {
     // ── Code View opt-in ────────────────────────────────────────────────────
     const hasWorkspace = !!vscode.workspace.workspaceFolders?.length;
     let codeViewEnabled = false;
+    let allowlist: string[] | null = null;
     if (hasWorkspace) {
       const cvPick = await vscode.window.showQuickPick(
         [
@@ -284,6 +285,27 @@ export class SessionManager {
       );
       if (!cvPick) return;
       codeViewEnabled = cvPick.value;
+
+      // ── Code View scope ───────────────────────────────────────────────────
+      if (codeViewEnabled) {
+        const scopePick = await vscode.window.showQuickPick(
+          [
+            { label: '$(folder-opened) Full workspace — viewers see every non-blocked file', value: 'all'    },
+            { label: '$(checklist)      Pick specific files — only these are exposed',       value: 'pick'   },
+          ],
+          { title: 'PortDrop — How much of the workspace should viewers see?' },
+        );
+        if (!scopePick) return;
+
+        if (scopePick.value === 'pick') {
+          const picked = await this.pickAllowlistFiles();
+          if (picked === undefined) return; // cancelled
+          if (picked.length === 0) {
+            vscode.window.showWarningMessage('[PortDrop] No files selected — code view will show an empty tree.');
+          }
+          allowlist = picked;
+        }
+      }
     }
 
     // ── Resolve binary ───────────────────────────────────────────────────────
@@ -346,6 +368,7 @@ export class SessionManager {
           maxUsers,
           workspaceRoot: codeViewEnabled ? workspaceRoot : null,
           blocklist,
+          allowlist,
         });
 
         // Session URL routes through the live dashboard — this is what gets shared.
@@ -369,6 +392,7 @@ export class SessionManager {
               oneTimeScan:     record.oneTimeScan,
               maxUsers:        record.maxUsers   ?? null,
               codeViewEnabled: record.codeViewEnabled,
+              allowlist:       record.allowlist,
             }),
           });
         } catch (err) {
@@ -588,5 +612,45 @@ export class SessionManager {
   notifyRelayError(message: string): void {
     this.relayError = message;
     this.sidebar.post({ type: 'RELAY_ERROR', message });
+  }
+
+  /**
+   * Workspace file picker for the Code View allowlist.
+   * Returns the picked workspace-relative paths (forward-slash, sorted),
+   * or undefined if the user cancelled.
+   */
+  private async pickAllowlistFiles(): Promise<string[] | undefined> {
+    const root = vscode.workspace.workspaceFolders?.[0];
+    if (!root) return [];
+
+    const userBlocklist = vscode.workspace.getConfiguration('portdrop').get<string[]>('blocklist', []);
+    const excludeGlobs = [
+      '**/node_modules/**', '**/.git/**', '**/dist/**', '**/.next/**',
+      '**/out/**', '**/build/**', '**/coverage/**', '**/.turbo/**',
+      '**/.vscode/**', '**/__pycache__/**', '**/.venv/**', '**/venv/**',
+      '**/.env*', '**/*.{key,pem,secret,p12,pfx}',
+      ...userBlocklist.map((p) => `**/${p}/**`),
+    ].join(',');
+
+    const uris = await vscode.workspace.findFiles('**/*', `{${excludeGlobs}}`, 5000);
+    const items = uris
+      .map((uri) => vscode.workspace.asRelativePath(uri, false).split('\\').join('/'))
+      .sort()
+      .map((label) => ({ label, picked: false }));
+
+    if (items.length === 0) {
+      vscode.window.showWarningMessage('[PortDrop] No files matched — workspace may be empty after the blocklist.');
+      return [];
+    }
+
+    const picked = await vscode.window.showQuickPick(items, {
+      title:        'PortDrop — Pick files to expose',
+      placeHolder:  `Select files (${items.length} available). Click each to include.`,
+      canPickMany:  true,
+      matchOnDetail: true,
+    });
+
+    if (picked === undefined) return undefined;
+    return picked.map((p) => p.label).sort();
   }
 }

@@ -152,6 +152,12 @@ function handleRequest(
       return;
     }
 
+    // Allowlist guard — when set, only those exact paths are readable
+    if (record.allowlist !== null && !record.allowlist.includes(toForward(filePath))) {
+      json(res, 403, { error: 'forbidden' });
+      return;
+    }
+
     try {
       const content     = fs.readFileSync(abs, 'utf8');
       const contentType = mimeForExt(path.extname(abs));
@@ -182,7 +188,10 @@ function handleRequest(
     }
 
     try {
-      const tree = buildFileTree(record.workspaceRoot, record.workspaceRoot, record.blocklist);
+      let tree = buildFileTree(record.workspaceRoot, record.workspaceRoot, record.blocklist);
+      if (record.allowlist !== null) {
+        tree = pruneToAllowlist(tree, record.allowlist);
+      }
       json(res, 200, { tree });
     } catch (err) {
       console.error('[PortDrop:Relay] /files error:', err);
@@ -308,7 +317,7 @@ function buildFileTree(root: string, dir: string, blocklist: string[]): FileNode
     if (isBlocked(entry.name, blocklist)) continue;
 
     const absPath = path.join(dir, entry.name);
-    const relPath = path.relative(root, absPath);
+    const relPath = toForward(path.relative(root, absPath));
 
     if (entry.isDirectory()) {
       nodes.push({
@@ -327,4 +336,35 @@ function buildFileTree(root: string, dir: string, blocklist: string[]): FileNode
     if (a.type !== b.type) return a.type === 'directory' ? -1 : 1;
     return a.name.localeCompare(b.name);
   });
+}
+
+/** Normalize OS path separators to forward slashes for cross-platform parity. */
+function toForward(p: string): string {
+  return p.split(path.sep).join('/');
+}
+
+/**
+ * Prune the tree to only nodes that are in the allowlist or are ancestors of
+ * an allowlisted file. Empty directories are dropped. The allowlist holds
+ * file paths only — directories are inferred from path prefixes.
+ */
+function pruneToAllowlist(nodes: FileNode[], allowlist: string[]): FileNode[] {
+  const allowedFiles = new Set(allowlist);
+  const out: FileNode[] = [];
+
+  for (const node of nodes) {
+    if (node.type === 'file') {
+      if (allowedFiles.has(node.path)) out.push(node);
+      continue;
+    }
+    // Directory — only keep if some allowlist entry lives under it
+    const prefix = node.path + '/';
+    const hasDescendant = allowlist.some((p) => p === node.path || p.startsWith(prefix));
+    if (!hasDescendant) continue;
+    const children = pruneToAllowlist(node.children ?? [], allowlist);
+    if (children.length === 0) continue;
+    out.push({ ...node, children });
+  }
+
+  return out;
 }

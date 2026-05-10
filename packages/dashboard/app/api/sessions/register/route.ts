@@ -23,6 +23,8 @@ export interface RedisSession {
   oneTimeScan:     boolean;
   maxUsers:        number | null;
   codeViewEnabled: boolean;
+  /** Forward-slash workspace-relative file paths viewers may read; null = full tree */
+  allowlist:       string[] | null;
   scanCount:       number;
   burned:          boolean;
   status:          'active' | 'stopped';
@@ -39,6 +41,7 @@ export async function POST(req: NextRequest) {
     oneTimeScan?: boolean;
     maxUsers?: number | null;
     codeViewEnabled?: boolean;
+    allowlist?: string[] | null;
   };
 
   try {
@@ -64,6 +67,7 @@ export async function POST(req: NextRequest) {
     oneTimeScan:     body.oneTimeScan      ?? false,
     maxUsers:        body.maxUsers         ?? null,
     codeViewEnabled: body.codeViewEnabled  ?? false,
+    allowlist:       body.allowlist        ?? null,
     scanCount:       0,
     burned:          false,
     status:          'active',
